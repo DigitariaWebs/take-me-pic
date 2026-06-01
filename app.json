@@ -14,7 +14,8 @@
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Take Me Pic uses your location to find photographers nearby and only during an active session.",
         "NSCameraUsageDescription": "Take Me Pic uses the camera to capture photos during a session.",
-        "NSPhotoLibraryUsageDescription": "Take Me Pic accesses your photo library to share and save photos from your sessions."
+        "NSPhotoLibraryUsageDescription": "Take Me Pic accesses your photo library to share and save photos from your sessions.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -27,7 +28,11 @@
         "googleMaps": {
           "apiKey": "REPLACE_WITH_ANDROID_GOOGLE_MAPS_API_KEY"
         }
-      }
+      },
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
     },
     "plugins": [
       "expo-router",
@@ -45,6 +50,12 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "5c65033e-8a7d-4768-b662-1bc38c8f25f5"
+      }
     }
   }
 }
