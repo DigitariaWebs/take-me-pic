@@ -1,25 +1,50 @@
 {
   "expo": {
-    "name": "tmp",
-    "slug": "tmp",
-    "version": "1.0.0",
+    "name": "Take Me Pic",
+    "slug": "take-me-pic",
+    "scheme": "tmp",
+    "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": false,
+      "bundleIdentifier": "com.takemepic.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Take Me Pic uses your location to find photographers nearby and only during an active session.",
+        "NSCameraUsageDescription": "Take Me Pic uses the camera to capture photos during a session.",
+        "NSPhotoLibraryUsageDescription": "Take Me Pic accesses your photo library to share and save photos from your sessions."
+      }
     },
     "android": {
+      "package": "com.takemepic.app",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "backgroundColor": "#f1e6cf",
+        "foregroundImage": "./assets/android-icon-foreground.png"
       },
-      "predictiveBackGestureEnabled": false
+      "config": {
+        "googleMaps": {
+          "apiKey": "REPLACE_WITH_ANDROID_GOOGLE_MAPS_API_KEY"
+        }
+      }
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-image",
+      "expo-splash-screen",
+      "expo-localization",
+      [
+        "expo-maps",
+        {
+          "requestLocationPermission": true,
+          "locationPermission": "Take Me Pic utilise ta position pour trouver des photographes à proximité, uniquement pendant une session active."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
     }
   }
 }

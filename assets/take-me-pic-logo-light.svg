@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Take Me Pic logo">
+  <title>Take Me Pic</title>
+  <rect width="512" height="512" rx="0" fill="#F1E6CF"/>
+  <!-- Pin -->
+  <path id="pin" d="M132.79 300.55A150.00 150.00 0 1 1 379.21 300.55L256.00 478.00Z" fill="#2A1F1A"/>
+  <!-- Lens recess (negative space / gaps) -->
+  <circle id="lens" cx="256.0" cy="212.0" r="102.00" fill="#F1E6CF"/>
+  <!-- Aperture blades -->
+  <g id="aperture">
+    <path d="M257.79 122.34L333.48 166.04L299.48 206.83L276.11 172.17Z" fill="#D9B566"/>
+    <path d="M334.54 168.72L334.54 256.12L282.22 247.07L300.55 209.50Z" fill="#2A1F1A"/>
+    <path d="M332.75 258.38L257.06 302.08L238.74 252.24L280.44 249.33Z" fill="#2A1F1A"/>
+    <path d="M254.21 301.66L178.52 257.96L212.52 217.17L235.89 251.83Z" fill="#2A1F1A"/>
+    <path d="M177.46 255.28L177.46 167.88L229.78 176.93L211.45 214.50Z" fill="#2A1F1A"/>
+    <path d="M179.25 165.62L254.94 121.92L273.26 171.76L231.56 174.67Z" fill="#2A1F1A"/>
+  </g>
+</svg>
