@@ -11,6 +11,7 @@ import { Stamp } from '@/shared/ui/Stamp';
 import { fonts, type ThemeColors } from '@/shared/constants/tokens';
 import { useThemeColors } from '@/shared/providers/ThemeProvider';
 import { t } from '@/shared/lib/i18n';
+import { useResetPassword } from '../hooks/useResetPassword';
 
 /** Forgot password — saisie de l'e-mail → lien de réinitialisation. */
 export default function Forgot() {
@@ -22,16 +23,24 @@ export default function Forgot() {
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [sent, setSent] = useState(false);
+  const resetPassword = useResetPassword();
 
   const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 
-  const onSend = () => {
+  const onSend = async () => {
     if (!isValidEmail(email)) {
       setError(t('ob.forgotError'));
       return;
     }
+    const cleanEmail = email.trim().toLowerCase();
     setError('');
-    setSent(true);
+    try {
+      await resetPassword.mutateAsync(cleanEmail);
+      setEmail(cleanEmail);
+      setSent(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('ob.authErrorGeneric'));
+    }
   };
 
   return (
@@ -108,7 +117,7 @@ export default function Forgot() {
       {/* CTA zone */}
       <View style={[styles.cta, { bottom: insets.bottom + 26 }]}>
         {!sent ? (
-          <Button full variant="ink" onPress={onSend}>
+          <Button full variant="ink" onPress={onSend} disabled={resetPassword.isPending}>
             {t('ob.forgotCta')}
           </Button>
         ) : (

@@ -1,7 +1,8 @@
 import { supabase } from '@/shared/lib/supabase';
-import type { Tables } from '@/shared/lib/supabase';
+import type { Tables, TablesInsert } from '@/shared/lib/supabase';
 
 export type Profile = Tables<'profiles'>;
+export type CreateProfileInput = TablesInsert<'profiles'>;
 export type LeaderboardEntry = {
   user_id: string;
   first_name: string;
@@ -13,11 +14,20 @@ export type LeaderboardEntry = {
 };
 
 export const profileApi = {
-  async getById(id: string): Promise<Profile> {
+  async getById(id: string): Promise<Profile | null> {
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', id)
+      .maybeSingle();
+    if (error) throw error;
+    return data;
+  },
+  async create(input: CreateProfileInput): Promise<Profile> {
+    const { data, error } = await supabase
+      .from('profiles')
+      .insert(input as never)
+      .select('*')
       .single();
     if (error) throw error;
     return data;

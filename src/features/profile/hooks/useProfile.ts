@@ -11,5 +11,6 @@ export function useProfile(id: string) {
     queryKey: profileKeys.detail(id),
     queryFn: () => profileApi.getById(id),
     enabled: id.length > 0,
+    retry: false,
   });
 }

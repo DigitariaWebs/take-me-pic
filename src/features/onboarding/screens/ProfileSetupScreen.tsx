@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View, FlatList } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Camera, X, Check } from 'lucide-react-native';
 import { PaperBackground } from '@/shared/ui/PaperBackground';
@@ -9,11 +9,14 @@ import { Polaroid } from '@/shared/ui/Polaroid';
 import { Tape } from '@/shared/ui/Tape';
 import { Squiggle } from '@/shared/ui/Squiggle';
 import { Chip } from '@/shared/ui/Chip';
+import { Field } from '@/shared/ui/Field';
 import { Button } from '@/shared/ui/Button';
 import { Flag } from '@/shared/ui/Flag';
 import { fonts, type ThemeColors } from '@/shared/constants/tokens';
 import { useThemeColors } from '@/shared/providers/ThemeProvider';
+import { useAuth } from '@/shared/providers';
 import { t } from '@/shared/lib/i18n';
+import { useCreateProfile } from '@/features/profile';
 
 type Language = { flag: string; label: string };
 
@@ -42,11 +45,25 @@ export default function Profile() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
+  const { firstName: initialFirstName, phone } = useLocalSearchParams<{
+    email?: string;
+    firstName?: string;
+    phone?: string;
+  }>();
+  const createProfile = useCreateProfile();
+  const [firstName, setFirstName] = useState(initialFirstName ?? 'Claire');
+  const [username, setUsername] = useState(
+    `@${(initialFirstName ?? 'claire').toLowerCase().replace(/[^a-z0-9]+/g, '.')}`.replace(/\.+$/, ''),
+  );
+  const [age, setAge] = useState('28');
+  const [city, setCity] = useState('Paris');
   const [bio, setBio] = useState(
     'photographe amateure,\nentre Paris & Lisbonne,\nfan des lumières du matin'
   );
   const [languages, setLanguages] = useState<Language[]>(INITIAL_LANGUAGES);
   const [langModalVisible, setLangModalVisible] = useState(false);
+  const [error, setError] = useState('');
 
   const removeLanguage = (label: string) => {
     setLanguages((prev) => prev.filter((l) => l.label !== label));
@@ -64,6 +81,42 @@ export default function Profile() {
     (l) => !languages.some((existing) => existing.label === l.label)
   );
 
+  const submitProfile = async () => {
+    const cleanFirstName = firstName.trim();
+    const cleanUsername = username.trim().replace(/^@+/, '').toLowerCase();
+    const parsedAge = Number.parseInt(age, 10);
+    const cleanCity = city.trim();
+
+    if (!user) {
+      setError(t('ob.profileSessionExpired'));
+      return;
+    }
+    if (!cleanFirstName || !cleanUsername || !cleanCity || !Number.isFinite(parsedAge) || parsedAge < 13 || languages.length === 0) {
+      setError(t('ob.profileRequiredFields'));
+      return;
+    }
+
+    setError('');
+    try {
+      await createProfile.mutateAsync({
+        id: user.id,
+        first_name: cleanFirstName,
+        username: cleanUsername,
+        age: parsedAge,
+        city: cleanCity,
+        languages: languages.map((l) => l.label),
+        bio: bio.trim() || null,
+        phone: phone?.trim() || null,
+        email_verified: Boolean(user.email_confirmed_at),
+        phone_verified: false,
+        verified: false,
+      });
+      router.replace('/(tabs)');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('ob.authErrorGeneric'));
+    }
+  };
+
   return (
     <PaperBackground tone="paper">
       <View style={{ paddingTop: insets.top }}>
@@ -74,11 +127,7 @@ export default function Profile() {
             </Pressable>
           }
           title={<Text style={styles.page}>{t('signup.page', { n: 3 })}</Text>}
-          right={
-            <Pressable onPress={() => router.replace('/(tabs)')}>
-              <Text style={styles.skip}>{t('common.skip')}</Text>
-            </Pressable>
-          }
+          right={<View style={{ width: 50 }} />}
         />
       </View>
 
@@ -95,6 +144,25 @@ export default function Profile() {
             <Squiggle style={styles.title}>{t('profileSetup.titleHighlight')}</Squiggle>
           </View>
           <Text style={[styles.title, { marginTop: 6 }]}>{t('profileSetup.titleSuffix')}</Text>
+        </View>
+
+        <Field label={t('signup.firstName')} value={firstName} onChangeText={(v) => { setFirstName(v); setError(''); }} autoCapitalize="words" />
+        <Field label={t('ob.username')} value={username} onChangeText={(v) => { setUsername(v); setError(''); }} autoCapitalize="none" autoCorrect={false} />
+        <View style={styles.twoCol}>
+          <Field
+            label={t('ob.age')}
+            value={age}
+            onChangeText={(v) => { setAge(v.replace(/\D/g, '')); setError(''); }}
+            keyboardType="number-pad"
+            containerStyle={styles.halfField}
+          />
+          <Field
+            label={t('ob.city')}
+            value={city}
+            onChangeText={(v) => { setCity(v); setError(''); }}
+            autoCapitalize="words"
+            containerStyle={styles.halfField}
+          />
         </View>
 
         <View style={styles.polaroidRow}>
@@ -145,10 +213,12 @@ export default function Profile() {
             {t('ob.addLanguageCta')}
           </Chip>
         </View>
+
+        {error ? <Text style={styles.error}>{error}</Text> : null}
       </ScrollView>
 
       <View style={[styles.cta, { bottom: insets.bottom + 26 }]}>
-        <Button full variant="gold" onPress={() => router.replace('/(tabs)')}>
+        <Button full variant="gold" onPress={submitProfile} disabled={createProfile.isPending}>
           {t('profileSetup.cta')}
         </Button>
       </View>
@@ -199,7 +269,6 @@ export default function Profile() {
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   back: { fontFamily: fonts.hand, fontSize: 20, color: colors.ink },
   page: { fontFamily: fonts.type, fontSize: 11, color: colors.inkFaded },
-  skip: { fontFamily: fonts.hand, fontSize: 18, color: colors.goldDeep },
   hello: {
     fontFamily: fonts.hand,
     fontSize: 26,
@@ -213,6 +282,8 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     letterSpacing: -0.5,
     lineHeight: 30,
   },
+  twoCol: { flexDirection: 'row', gap: 12 },
+  halfField: { flex: 1 },
   polaroidRow: { alignItems: 'center', marginBottom: 10, position: 'relative' },
   cameraBtn: {
     position: 'absolute',
@@ -239,6 +310,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   bioText: { fontFamily: fonts.hand, fontSize: 20, color: colors.ink, lineHeight: 24 },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
+  error: { fontFamily: fonts.hand, fontSize: 16, color: colors.stampRed, marginTop: 16 },
   cta: { position: 'absolute', left: 22, right: 22 },
   // Modal styles
   modalSheet: {

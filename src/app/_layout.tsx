@@ -60,6 +60,7 @@ function RootShell() {
           <Stack.Screen name="index" />
           <Stack.Screen name="(onboarding)" />
           <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="auth/callback" />
           <Stack.Screen name="user/[id]" options={{ presentation: 'modal' }} />
           <Stack.Screen name="request/sent" options={{ presentation: 'modal' }} />
           <Stack.Screen name="request/incoming" options={{ presentation: 'fullScreenModal' }} />

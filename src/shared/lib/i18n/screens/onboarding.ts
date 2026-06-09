@@ -29,8 +29,9 @@ const domain = {
       loginStamp: 'ACCÈS\nMEMBRE\n★ ★ ★\n2026',
       errorEmail: 'Saisis une adresse e-mail valide.',
       errorPasswordShort: 'Mot de passe trop court (4 caractères minimum).',
-      errorSignupFields: 'Vérifie ton prénom, ton e-mail et ton numéro.',
+      errorSignupFields: 'Vérifie ton prénom et ton e-mail.',
       errorSignupTerms: 'Accepte les conditions pour continuer.',
+      authErrorGeneric: 'Impossible de terminer cette étape. Réessaie.',
 
       // forgot.tsx
       forgotEyebrow: 'pas de panique,',
@@ -61,9 +62,15 @@ const domain = {
 
       // otp.tsx
       demoHint: 'astuce démo · tape 258741',
-      otpErrorCode: 'Code incorrect — réessaie (démo : 258741).',
+      emailVerificationHint: 'vérifie tes mails pour le code de confirmation',
+      otpErrorCode: 'Code incorrect — réessaie.',
 
       // profile.tsx
+      username: 'nom d\'utilisateur',
+      age: 'âge',
+      city: 'ville',
+      profileRequiredFields: 'Complète prénom, pseudo, âge, ville et langues.',
+      profileSessionExpired: 'Ta session a expiré. Reconnecte-toi.',
       bioPlaceholder: 'dis-nous quelque chose…',
       addLanguageCta: '+ ajouter',
       addLanguageTitle: 'ajouter une langue',
@@ -99,8 +106,9 @@ const domain = {
       loginStamp: 'MEMBER\nACCESS\n★ ★ ★\n2026',
       errorEmail: 'Please enter a valid e-mail address.',
       errorPasswordShort: 'Password too short (4 characters minimum).',
-      errorSignupFields: 'Check your first name, e-mail and phone number.',
+      errorSignupFields: 'Check your first name and e-mail.',
       errorSignupTerms: 'Please accept the terms to continue.',
+      authErrorGeneric: 'Could not complete this step. Try again.',
 
       forgotEyebrow: 'no worries,',
       forgotTitle: 'forgot',
@@ -128,9 +136,15 @@ const domain = {
       resetLoginCta: 'sign in',
 
       demoHint: 'demo tip · type 258741',
-      otpErrorCode: 'Wrong code — try again (demo: 258741).',
+      emailVerificationHint: 'check your inbox for the confirmation code',
+      otpErrorCode: 'Wrong code — try again.',
 
       bioPlaceholder: 'tell us something…',
+      username: 'username',
+      age: 'age',
+      city: 'city',
+      profileRequiredFields: 'Complete first name, username, age, city and languages.',
+      profileSessionExpired: 'Your session expired. Sign in again.',
       addLanguageCta: '+ add',
       addLanguageTitle: 'add a language',
       allLanguagesAdded: 'All languages have been added.',
@@ -165,8 +179,9 @@ const domain = {
       loginStamp: 'دخول\nالأعضاء\n★ ★ ★\n2026',
       errorEmail: 'يرجى إدخال بريد إلكتروني صحيح.',
       errorPasswordShort: 'كلمة المرور قصيرة جداً (4 أحرف على الأقل).',
-      errorSignupFields: 'تحقق من الاسم والبريد الإلكتروني ورقم الهاتف.',
+      errorSignupFields: 'تحقق من الاسم والبريد الإلكتروني.',
       errorSignupTerms: 'يرجى قبول الشروط للمتابعة.',
+      authErrorGeneric: 'تعذر إكمال هذه الخطوة. حاول مرة أخرى.',
 
       forgotEyebrow: 'لا تقلق،',
       forgotTitle: 'نسيت',
@@ -194,9 +209,15 @@ const domain = {
       resetLoginCta: 'تسجيل الدخول',
 
       demoHint: 'تلميح تجريبي · اكتب 258741',
-      otpErrorCode: 'رمز غير صحيح — أعد المحاولة (تجريبي: 258741).',
+      emailVerificationHint: 'تحقق من بريدك للحصول على رمز التأكيد',
+      otpErrorCode: 'رمز غير صحيح — أعد المحاولة.',
 
       bioPlaceholder: 'أخبرنا شيئاً عنك…',
+      username: 'اسم المستخدم',
+      age: 'العمر',
+      city: 'المدينة',
+      profileRequiredFields: 'أكمل الاسم واسم المستخدم والعمر والمدينة واللغات.',
+      profileSessionExpired: 'انتهت جلستك. سجل الدخول مرة أخرى.',
       addLanguageCta: '+ إضافة',
       addLanguageTitle: 'إضافة لغة',
       allLanguagesAdded: 'تمت إضافة جميع اللغات.',
@@ -231,8 +252,9 @@ const domain = {
       loginStamp: 'ACCESO\nMIEMBRO\n★ ★ ★\n2026',
       errorEmail: 'Introduce un correo electrónico válido.',
       errorPasswordShort: 'Contraseña demasiado corta (mínimo 4 caracteres).',
-      errorSignupFields: 'Revisa tu nombre, correo y número de teléfono.',
+      errorSignupFields: 'Revisa tu nombre y correo.',
       errorSignupTerms: 'Acepta las condiciones para continuar.',
+      authErrorGeneric: 'No se pudo completar este paso. Inténtalo de nuevo.',
 
       forgotEyebrow: 'tranquilo,',
       forgotTitle: 'contraseña',
@@ -260,9 +282,15 @@ const domain = {
       resetLoginCta: 'iniciar sesión',
 
       demoHint: 'demo · escribe 258741',
-      otpErrorCode: 'Código incorrecto — inténtalo de nuevo (demo: 258741).',
+      emailVerificationHint: 'revisa tu correo para el código de confirmación',
+      otpErrorCode: 'Código incorrecto — inténtalo de nuevo.',
 
       bioPlaceholder: 'cuéntanos algo…',
+      username: 'usuario',
+      age: 'edad',
+      city: 'ciudad',
+      profileRequiredFields: 'Completa nombre, usuario, edad, ciudad e idiomas.',
+      profileSessionExpired: 'Tu sesión expiró. Inicia sesión otra vez.',
       addLanguageCta: '+ añadir',
       addLanguageTitle: 'añadir un idioma',
       allLanguagesAdded: 'Ya se han añadido todos los idiomas.',

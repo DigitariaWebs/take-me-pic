@@ -22,6 +22,17 @@ function getArg(name) {
   return process.argv[index + 1];
 }
 
+function getArgs(name) {
+  return process.argv.flatMap((arg, index) => {
+    if (arg !== name) {
+      return [];
+    }
+
+    const value = process.argv[index + 1];
+    return value ? [value] : [];
+  });
+}
+
 function formatLocalDate(date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -80,8 +91,50 @@ function parseStatus(status) {
   };
 }
 
-function createGeneratedBlock({ branch, commits, status, date }) {
-  const statusSummary = parseStatus(status);
+function parseIncludedRepo(value) {
+  const [repoPath, label] = value.split('::');
+  const resolvedPath = path.resolve(repoPath);
+
+  return {
+    path: resolvedPath,
+    label: label || path.basename(resolvedPath),
+  };
+}
+
+function getRepoSnapshot({ repoPath, label, date, nextDate }) {
+  const repoRoot = git(['rev-parse', '--show-toplevel'], { cwd: repoPath }) || repoPath;
+  const branch = git(['branch', '--show-current'], { cwd: repoRoot });
+  const commits = git(['log', `--since=${date} 00:00`, `--until=${nextDate} 00:00`, '--oneline'], { cwd: repoRoot });
+  const status = git(['status', '--short'], { cwd: repoRoot });
+
+  return {
+    label,
+    path: repoRoot,
+    branch,
+    commits,
+    status,
+  };
+}
+
+function formatRepoTracking(snapshot) {
+  const statusSummary = parseStatus(snapshot.status);
+
+  return [
+    `### ${snapshot.label}`,
+    '',
+    `Path: \`${snapshot.path}\``,
+    `Branch: \`${snapshot.branch || 'detached'}\``,
+    `Working tree: ${statusSummary.clean ? 'clean' : `${statusSummary.total} changed entr${statusSummary.total === 1 ? 'y' : 'ies'}`}`,
+    '',
+    '#### Commits Today',
+    '',
+    formatCodeBlock(snapshot.commits),
+  ].join('\n');
+}
+
+function createGeneratedBlock({ snapshots, date }) {
+  const primary = snapshots[0];
+  const statusSummary = parseStatus(primary.status);
   const generatedAt = new Date().toISOString();
 
   return [
@@ -90,12 +143,10 @@ function createGeneratedBlock({ branch, commits, status, date }) {
     '',
     `Generated: ${generatedAt}`,
     `Date scope: ${date} 00:00 to generation time`,
-    `Branch: \`${branch || 'detached'}\``,
+    `Branch: \`${primary.branch || 'detached'}\``,
     `Working tree: ${statusSummary.clean ? 'clean' : `${statusSummary.total} changed entr${statusSummary.total === 1 ? 'y' : 'ies'}`}`,
     '',
-    '### Commits Today',
-    '',
-    formatCodeBlock(commits),
+    ...snapshots.map(formatRepoTracking),
     AUTO_END,
   ].join('\n');
 }
@@ -154,14 +205,20 @@ const date = getArg('--date') || formatLocalDate(new Date());
 const nextDate = getNextDate(date);
 const repoRoot = git(['rev-parse', '--show-toplevel'], { cwd: process.cwd() }) || process.cwd();
 const branch = git(['branch', '--show-current'], { cwd: repoRoot });
-const commits = git(['log', `--since=${date} 00:00`, `--until=${nextDate} 00:00`, '--oneline'], { cwd: repoRoot });
-const status = git(['status', '--short'], { cwd: repoRoot });
+const includedRepos = getArgs('--include-repo').map(parseIncludedRepo);
+const snapshots = [
+  getRepoSnapshot({ repoPath: repoRoot, label: 'Mobile repo', date, nextDate }),
+  ...includedRepos.map((repo) => getRepoSnapshot({
+    repoPath: repo.path,
+    label: repo.label,
+    date,
+    nextDate,
+  })),
+];
 const outputDir = path.join(repoRoot, 'docs', 'daily_shift_tasks');
 const outputPath = path.join(outputDir, `daily-shift-${date}.md`);
 const generatedBlock = createGeneratedBlock({
-  branch,
-  commits,
-  status,
+  snapshots,
   date,
 });
 

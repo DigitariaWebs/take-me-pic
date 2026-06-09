@@ -4,4 +4,5 @@ export { default as LeaderboardScreen } from './screens/LeaderboardScreen';
 
 export { profileApi, type Profile, type LeaderboardEntry } from './api/profile-api';
 export { useProfile, profileKeys } from './hooks/useProfile';
+export { useCreateProfile } from './hooks/useCreateProfile';
 export { useLeaderboard, leaderboardKeys } from './hooks/useLeaderboard';

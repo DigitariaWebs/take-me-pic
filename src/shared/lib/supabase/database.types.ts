@@ -76,6 +76,12 @@ export interface Database {
           avatar_url?: string | null;
           cover_url?: string | null;
           bio?: string | null;
+          email_verified?: boolean;
+          phone?: string | null;
+          phone_verified?: boolean;
+          verified?: boolean;
+          is_premium?: boolean;
+          is_banned?: boolean;
         };
         Update: Partial<Database['public']['Tables']['profiles']['Insert']>;
         Relationships: [];

@@ -34,10 +34,10 @@ Create a new user, verify email/phone, complete profile, restart the app, and co
 - [ ] Add avatar upload helper and Storage policy.
 - [ ] Add auth/profile gate for map/request/helper actions.
 - [ ] Add tests for signup, verification, profile write, and banned/unverified access.
+- [ ] Add Apple and Google sign-in as a follow-up auth slice (`001-2`), after the email/password flow is stable.
 
 ## Risks
 
 - User metadata must not drive authorization.
 - OTP resend must be rate-limited.
 - Avatar upload and profile write need retry/rollback behavior.
-

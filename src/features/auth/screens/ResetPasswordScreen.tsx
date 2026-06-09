@@ -12,6 +12,7 @@ import { Stamp } from '@/shared/ui/Stamp';
 import { fonts, type ThemeColors } from '@/shared/constants/tokens';
 import { useThemeColors } from '@/shared/providers/ThemeProvider';
 import { t } from '@/shared/lib/i18n';
+import { useUpdatePassword } from '../hooks/useUpdatePassword';
 
 /** Reset password — saisie du nouveau mot de passe → succès → connexion. */
 export default function Reset() {
@@ -26,8 +27,9 @@ export default function Reset() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
+  const updatePassword = useUpdatePassword();
 
-  const onReset = () => {
+  const onReset = async () => {
     if (password.length < 4) {
       setError(t('ob.resetErrorShort'));
       return;
@@ -37,7 +39,12 @@ export default function Reset() {
       return;
     }
     setError('');
-    setDone(true);
+    try {
+      await updatePassword.mutateAsync(password);
+      setDone(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('ob.authErrorGeneric'));
+    }
   };
 
   const clearError = () => {
@@ -150,7 +157,7 @@ export default function Reset() {
       {/* CTA zone */}
       <View style={[styles.cta, { bottom: insets.bottom + 26 }]}>
         {!done ? (
-          <Button full variant="ink" onPress={onReset}>
+          <Button full variant="ink" onPress={onReset} disabled={updatePassword.isPending}>
             {t('ob.resetCta')}
           </Button>
         ) : (

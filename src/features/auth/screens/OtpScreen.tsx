@@ -19,9 +19,11 @@ import { Stamp } from '@/shared/ui/Stamp';
 import { fonts, type ThemeColors } from '@/shared/constants/tokens';
 import { useThemeColors } from '@/shared/providers/ThemeProvider';
 import { t } from '@/shared/lib/i18n';
+import { useResendSignupVerification } from '../hooks/useResendSignupVerification';
+import { useVerifyOtp } from '../hooks/useVerifyOtp';
+import { useAuthUiStore } from '../store/auth-ui-store';
 
 const LEN = 6;
-const CORRECT = '258741'; // demo code that "validates"
 
 /** 03b · Tampon d'entrée — vérification OTP (PAGE 2/3). */
 export default function Otp() {
@@ -29,7 +31,14 @@ export default function Otp() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { phone } = useLocalSearchParams<{ phone?: string }>();
+  const { email, firstName, phone } = useLocalSearchParams<{
+    email?: string;
+    firstName?: string;
+    phone?: string;
+  }>();
+  const rememberedEmail = useAuthUiStore((s) => s.rememberedEmail);
+  const verifyOtp = useVerifyOtp();
+  const resendSignupVerification = useResendSignupVerification();
 
   const [digits, setDigits] = useState<string[]>(Array(LEN).fill(''));
   const [seconds, setSeconds] = useState(30);
@@ -38,6 +47,8 @@ export default function Otp() {
   const [verified, setVerified] = useState(false);
   const inputs = useRef<Array<TextInput | null>>([]);
   const stamp = useRef(new Animated.Value(0)).current; // 0 → 1 passport-stamp slam
+  const errorFocusTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const resentMessageTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (seconds <= 0) return;
@@ -51,14 +62,22 @@ export default function Otp() {
     return () => clearTimeout(id);
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (errorFocusTimeout.current) clearTimeout(errorFocusTimeout.current);
+      if (resentMessageTimeout.current) clearTimeout(resentMessageTimeout.current);
+    };
+  }, []);
+
   const code = digits.join('');
   const complete = code.length === LEN;
+  const verificationEmail = (email ?? rememberedEmail).trim().toLowerCase();
 
   // auto-verify the moment all 6 digits are in
   useEffect(() => {
-    if (complete && !verified) verify();
+    if (complete && !verified && !verifyOtp.isPending) verify();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [code]);
+  }, [code, verifyOtp.isPending]);
 
   const stampDown = () => {
     setVerified(true);
@@ -67,7 +86,10 @@ export default function Otp() {
     Animated.sequence([
       Animated.spring(stamp, { toValue: 1, friction: 4.5, tension: 140, useNativeDriver: true }),
       Animated.delay(550),
-    ]).start(() => router.push('/(onboarding)/profile'));
+    ]).start(() => router.replace({
+      pathname: '/(onboarding)/profile',
+      params: { email: verificationEmail, firstName, phone },
+    }));
   };
 
   const setDigit = (i: number, val: string) => {
@@ -100,26 +122,44 @@ export default function Otp() {
     }
   };
 
-  const verify = () => {
+  const verify = async () => {
+    if (verifyOtp.isPending) return;
     if (!complete) {
       setError(t('otp.invalid'));
       return;
     }
-    if (code !== CORRECT) {
-      setError(t('ob.otpErrorCode'));
-      setDigits(Array(LEN).fill(''));
-      setTimeout(() => inputs.current[0]?.focus(), 60);
+    if (!verificationEmail.includes('@')) {
+      setError(t('ob.errorEmail'));
       return;
     }
-    stampDown();
+    try {
+      await verifyOtp.mutateAsync({ email: verificationEmail, token: code });
+      stampDown();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('ob.otpErrorCode'));
+      setDigits(Array(LEN).fill(''));
+      if (errorFocusTimeout.current) clearTimeout(errorFocusTimeout.current);
+      errorFocusTimeout.current = setTimeout(() => inputs.current[0]?.focus(), 60);
+    }
   };
 
-  const resend = () => {
+  const resend = async () => {
+    if (resendSignupVerification.isPending) return;
+    if (!verificationEmail.includes('@')) {
+      setError(t('ob.errorEmail'));
+      return;
+    }
     setSeconds(30);
     setDigits(Array(LEN).fill(''));
-    setResentMsg(t('otp.resent'));
-    inputs.current[0]?.focus();
-    setTimeout(() => setResentMsg(''), 2200);
+    try {
+      await resendSignupVerification.mutateAsync(verificationEmail);
+      setResentMsg(t('otp.resent'));
+      inputs.current[0]?.focus();
+      if (resentMessageTimeout.current) clearTimeout(resentMessageTimeout.current);
+      resentMessageTimeout.current = setTimeout(() => setResentMsg(''), 2200);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('ob.authErrorGeneric'));
+    }
   };
 
   // passport-stamp transform
@@ -144,7 +184,7 @@ export default function Otp() {
           <Squiggle style={styles.title}>{t('otp.titleHighlight')}</Squiggle>
           <Text style={styles.title}>.</Text>
         </View>
-        <Text style={styles.subtitle}>{t('otp.sub', { phone: phone ?? '+33 6 12 34 56 78' })}</Text>
+        <Text style={styles.subtitle}>{t('otp.sub', { email: verificationEmail || t('ob.email') })}</Text>
 
         {/* Code boxes */}
         <View style={styles.codeRow}>
@@ -159,7 +199,7 @@ export default function Otp() {
               onKeyPress={(e) => onKey(i, e)}
               keyboardType="number-pad"
               maxLength={LEN}
-              editable={!verified}
+              editable={!verified && !verifyOtp.isPending}
               style={[styles.codeBox, d ? styles.codeBoxFilled : null, verified && styles.codeBoxDone]}
               textAlign="center"
               returnKeyType="done"
@@ -167,7 +207,7 @@ export default function Otp() {
           ))}
         </View>
 
-        <Text style={styles.demoHint}>{t('ob.demoHint')}</Text>
+        <Text style={styles.demoHint}>{t('ob.emailVerificationHint')}</Text>
 
         {/* Resend / status */}
         <View style={styles.resendRow}>
@@ -178,7 +218,7 @@ export default function Otp() {
               {t('otp.notReceived')} {t('otp.resendIn', { s: seconds })}
             </Text>
           ) : (
-            <Pressable onPress={resend}>
+            <Pressable onPress={resend} disabled={resendSignupVerification.isPending}>
               <Text style={styles.resendLink}>{t('otp.resend')}</Text>
             </Pressable>
           )}
@@ -207,7 +247,7 @@ export default function Otp() {
       </Animated.View>
 
       <View style={[styles.cta, { bottom: insets.bottom + 26 }]}>
-        <Button full variant={complete ? 'gold' : 'ink'} onPress={verify} disabled={verified}>
+        <Button full variant={complete ? 'gold' : 'ink'} onPress={verify} disabled={verified || verifyOtp.isPending}>
           {t('otp.cta')}
         </Button>
       </View>
