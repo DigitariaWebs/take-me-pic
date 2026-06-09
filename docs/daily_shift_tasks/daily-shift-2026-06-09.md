@@ -32,20 +32,21 @@ Implemented the first mobile auth slice around Supabase email/password signup, e
 <!-- daily-shift:auto:start -->
 ## Git Tracking
 
-Generated: 2026-06-09T22:49:39.281Z
+Generated: 2026-06-09T22:52:35.266Z
 Date scope: 2026-06-09 00:00 to generation time
 Branch: `dev`
-Working tree: 42 changed entries
+Working tree: 11 changed entries
 
 ### Mobile repo
 
 Path: `/Users/macbookpro/Documents/Progix/take-my-pic`
 Branch: `dev`
-Working tree: 42 changed entries
+Working tree: 11 changed entries
 
 #### Commits Today
 
 ```text
+ddea465 feat(mobile): wire Supabase auth onboarding
 7ab278c chore(env): add Supabase env example
 589164d chore(docs): add daily shift routine
 d6ab756 chore(skills): add Supabase agent skills
@@ -57,11 +58,13 @@ a06482c refactor(app): move to feature-first src layout
 
 Path: `/Users/macbookpro/Documents/Progix/take-my-pic-web/take-me-pic-web`
 Branch: `main`
-Working tree: 20 changed entries
+Working tree: 1 changed entry
 
 #### Commits Today
 
-None
+```text
+5c10f23 feat(web): wire Supabase admin foundation
+```
 <!-- daily-shift:auto:end -->
 
 ## Next Shift Tasks
@@ -76,4 +79,4 @@ None
 ## Notes
 
 - `profileApi.create` still uses `input as never` because the hand-authored Supabase type shape does not satisfy the current insert overload; regenerate real Supabase types before tightening that.
-- The shift file now tracks the web repo at `/Users/macbookpro/Documents/Progix/take-my-pic-web/take-me-pic-web`; it had no commits today at generation time but did have uncommitted changes.
+- The shift file now tracks the web repo at `/Users/macbookpro/Documents/Progix/take-my-pic-web/take-me-pic-web`; after the web commit, only `.agent-board/` remains untracked there.
