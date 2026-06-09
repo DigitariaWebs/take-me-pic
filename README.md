@@ -26,6 +26,9 @@ source of truth).
   the mockup).
 - **i18n-js + expo-localization + AsyncStorage** for FR (primary) / EN / AR
   language switching with persistence.
+- **@tanstack/react-query** for server state (Supabase reads/mutations).
+- **zustand** for client state (role, transient UI/feature state).
+- **@supabase/supabase-js** centralized under `src/shared/lib/supabase`.
 
 ## Run
 
@@ -40,38 +43,47 @@ device. The app boots into the splash, walks through 3 onboarding pages
 
 ## Project layout
 
-```
-app/                  # expo-router file routes (one file per screen)
-  _layout.tsx         # root stack with all 27 screens
-  index.tsx           # redirect to onboarding
-  (onboarding)/       # 01 splash, 02 intro, 03 signup, 04 profile setup
-  (tabs)/             # bottom-tab routes — carte / carnet / messages / moi
-  user/[id].tsx       # 06 mini profile (modal) + 16 full public profile
-  request/sent.tsx    # 07
-  request/incoming.tsx# 08
-  chat/[id].tsx       # 09
-  session/*.tsx       # 10 photo session, 11 gallery, 12 rating
-  post/[id].tsx       # 15
-  spots/*             # 17 spots map + 18 spot detail
-  stars.tsx           # 19 leaderboard
-  manual.tsx          # 20 framing guides
-  premium.tsx         # 21 paywall
-  ai-camera.tsx       # 22
-  itinerary.tsx       # 23
-  booking.tsx         # 24
-  family.tsx          # 25
-  settings.tsx        # 26
-  notifications.tsx   # 27
+Feature-first architecture (see `docs/ARCHITECTURE.md` for the full rules).
+`src/app/` is the thin Expo Router layer; all logic lives in `src/features/*`;
+anything used by 2+ features lives in `src/shared/`.
 
-components/           # reusable journal components (Polaroid, Stamp,
-                      # Tape, LuggageTag, Ticket, Squiggle, Pin, Compass,
-                      # HandMap, JournalSwitch, JournalTabBar, Button,
-                      # Chip, Field, Avatar, PaperBackground, iOSChrome)
-theme/tokens.ts       # colors / fonts / radii / shadows from :root
-theme/fonts.ts        # loads all four Google Fonts
-i18n/{fr,en,ar}.ts    # strings + helper hook
-data/mock.ts          # types + seed data (users, posts, spots, etc.)
-mockup/               # the approved HTML design (source of truth)
+```
+src/
+  app/                # expo-router file routes ONLY — thin re-exports + layouts
+    _layout.tsx       # root: QueryProvider > ThemeProvider > AuthProvider > Role
+    index.tsx         # redirect to onboarding
+    (onboarding)/     # auth + onboarding routes
+    (tabs)/           # bottom-tab routes — carte / carnet / messages / moi
+    request/ session/ chat/ post/ spots/ user/ ...  # one thin file per route
+
+  features/           # every feature: api/ components/ hooks/ screens/ store/ types/ index.ts
+    auth/             # login, signup, otp, forgot/reset (+ Supabase auth api/hooks/store)
+    onboarding/       # splash, intro, profile setup
+    profile/          # my profile, public profile, leaderboard (+ TanStack Query api/hooks)
+    feed/ chat/       # community feed + realtime session chat (screens + components + types)
+    discover/         # nearby map
+    help-request/ session/ spots/ premium/ ai-camera/
+    itinerary/ booking/ family/ settings/ notifications/
+
+  shared/
+    lib/supabase/     # client / auth / storage / realtime / database.types (centralized)
+    lib/query/        # TanStack Query client factory
+    lib/i18n/         # strings + helper hook
+    lib/analytics/ lib/sentry/
+    providers/        # AuthProvider / QueryProvider / ThemeProvider / RoleProvider
+    store/            # zustand client-state stores (role)
+    ui/               # reusable presentational components (Polaroid, Stamp, Button, ...)
+    constants/        # tokens.ts (colors/fonts/radii) + fonts.ts loader
+    data/             # mock.ts seed data + countries
+    hooks/ utils/ types/ testing/
+
+assets/               # icons / splash (referenced by app.json at repo root)
+```
+
+A consumer imports a feature through its public API only:
+
+```ts
+import { LoginScreen, useLogin } from '@/features/auth';
 ```
 
 ## Config-plugin steps (for when you ship a real build)
@@ -95,19 +107,21 @@ mockup/               # the approved HTML design (source of truth)
 
 ## What's not built
 
-- No backend yet — `data/mock.ts` is the data layer. To swap in
-  Firestore / Stripe later, replace the exports there with fetcher
-  functions; screens import by name so the change is local.
+- Screens still render from `src/shared/data/mock.ts` (the approved UI is
+  unchanged). The Supabase + TanStack Query data layer is now wired
+  (`src/shared/lib/supabase`, `src/features/*/api`, `src/features/*/hooks`);
+  swap a screen's mock import for the feature hook to go live, screen by
+  screen, without touching the UI.
 - No real AI; screen 22 uses a static "suggestion" panel that matches the
   mockup. Hook up your favorite model (Anthropic / OpenAI) behind the
   `Sparkles` button.
 - Arabic / English strings exist as stubs that fall back to French. Once
   translated, also flip `I18nManager.forceRTL(true)` in the AR branch of
-  `i18n/index.ts` and reload.
+  `src/shared/lib/i18n/index.ts` and reload.
 
 ## Design references
 
 When in doubt about a visual detail, open `mockup/Take Me Pic v2.html` in
 a browser side-by-side with the running app — that's the single source of
-truth, by design. Every token in `theme/tokens.ts` traces back to a
-`:root` variable in that file.
+truth, by design. Every token in `src/shared/constants/tokens.ts` traces back
+to a `:root` variable in that file.
