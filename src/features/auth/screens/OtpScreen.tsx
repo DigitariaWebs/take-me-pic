@@ -24,6 +24,7 @@ import { useVerifyOtp } from '../hooks/useVerifyOtp';
 import { useAuthUiStore } from '../store/auth-ui-store';
 
 const LEN = 6;
+const RESEND_COOLDOWN_SECONDS = 60;
 
 /** 03b · Tampon d'entrée — vérification OTP (PAGE 2/3). */
 export default function Otp() {
@@ -41,7 +42,7 @@ export default function Otp() {
   const resendSignupVerification = useResendSignupVerification();
 
   const [digits, setDigits] = useState<string[]>(Array(LEN).fill(''));
-  const [seconds, setSeconds] = useState(30);
+  const [seconds, setSeconds] = useState(RESEND_COOLDOWN_SECONDS);
   const [error, setError] = useState('');
   const [resentMsg, setResentMsg] = useState('');
   const [verified, setVerified] = useState(false);
@@ -149,10 +150,10 @@ export default function Otp() {
       setError(t('ob.errorEmail'));
       return;
     }
-    setSeconds(30);
     setDigits(Array(LEN).fill(''));
     try {
       await resendSignupVerification.mutateAsync(verificationEmail);
+      setSeconds(RESEND_COOLDOWN_SECONDS);
       setResentMsg(t('otp.resent'));
       inputs.current[0]?.focus();
       if (resentMessageTimeout.current) clearTimeout(resentMessageTimeout.current);

@@ -13,7 +13,16 @@ import { fonts, type ThemeColors } from '@/shared/constants/tokens';
 import { useThemeColors } from '@/shared/providers/ThemeProvider';
 import { t } from '@/shared/lib/i18n';
 import { useLogin } from '../hooks/useLogin';
+import { useResendSignupVerification } from '../hooks/useResendSignupVerification';
 import { useAuthUiStore } from '../store/auth-ui-store';
+
+function isEmailNotConfirmedError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  return error.message.toLowerCase().includes('email not confirmed');
+}
 
 /** Connexion — e-mail + mot de passe, validation légère, → /(tabs). */
 export default function Login() {
@@ -27,6 +36,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const login = useLogin();
+  const resendSignupVerification = useResendSignupVerification();
   const setRememberedEmail = useAuthUiStore((s) => s.setRememberedEmail);
 
   const onSubmit = async () => {
@@ -45,6 +55,16 @@ export default function Login() {
       setRememberedEmail(cleanEmail);
       router.replace('/');
     } catch (err) {
+      if (isEmailNotConfirmedError(err)) {
+        setRememberedEmail(cleanEmail);
+        try {
+          await resendSignupVerification.mutateAsync(cleanEmail);
+        } catch {
+          // The original confirmation email may still be valid or Supabase may be rate-limiting resend.
+        }
+        router.replace({ pathname: '/(onboarding)/otp', params: { email: cleanEmail } });
+        return;
+      }
       setError(err instanceof Error ? err.message : t('ob.authErrorGeneric'));
     }
   };
@@ -136,7 +156,7 @@ export default function Login() {
       </View>
 
       <View style={[styles.cta, { bottom: insets.bottom + 26 }]}>
-        <Button full variant="ink" onPress={onSubmit} disabled={login.isPending}>
+        <Button full variant="ink" onPress={onSubmit} disabled={login.isPending || resendSignupVerification.isPending}>
           {t('ob.loginCta')}
         </Button>
         <Text style={styles.foot}>

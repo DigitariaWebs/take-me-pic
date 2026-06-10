@@ -17,6 +17,7 @@ import { useThemeColors } from '@/shared/providers/ThemeProvider';
 import { useAuth } from '@/shared/providers';
 import { t } from '@/shared/lib/i18n';
 import { useCreateProfile } from '@/features/profile';
+import { normalizeUsername, validateTrustedProfileInput } from '@/features/profile';
 
 type Language = { flag: string; label: string };
 
@@ -83,15 +84,22 @@ export default function Profile() {
 
   const submitProfile = async () => {
     const cleanFirstName = firstName.trim();
-    const cleanUsername = username.trim().replace(/^@+/, '').toLowerCase();
+    const cleanUsername = normalizeUsername(username);
     const parsedAge = Number.parseInt(age, 10);
     const cleanCity = city.trim();
+    const selectedLanguages = languages.map((l) => l.label);
 
     if (!user) {
       setError(t('ob.profileSessionExpired'));
       return;
     }
-    if (!cleanFirstName || !cleanUsername || !cleanCity || !Number.isFinite(parsedAge) || parsedAge < 13 || languages.length === 0) {
+    if (!validateTrustedProfileInput({
+      first_name: cleanFirstName,
+      username: cleanUsername,
+      age: parsedAge,
+      city: cleanCity,
+      languages: selectedLanguages,
+    })) {
       setError(t('ob.profileRequiredFields'));
       return;
     }
@@ -104,12 +112,9 @@ export default function Profile() {
         username: cleanUsername,
         age: parsedAge,
         city: cleanCity,
-        languages: languages.map((l) => l.label),
+        languages: selectedLanguages,
         bio: bio.trim() || null,
         phone: phone?.trim() || null,
-        email_verified: Boolean(user.email_confirmed_at),
-        phone_verified: false,
-        verified: false,
       });
       router.replace('/(tabs)');
     } catch (err) {

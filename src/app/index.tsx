@@ -1,31 +1,35 @@
 import { Redirect } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
-import { colors, fonts } from '@/shared/constants/tokens';
-import { useAuth } from '@/shared/providers';
-import { useProfile } from '@/features/profile';
+import { StyleSheet, View } from 'react-native';
+import { colors } from '@/shared/constants/tokens';
+import { ProfileGateErrorState, useTrustedProfileGate } from '@/features/profile';
+
+const blockedRoute = '/blocked' as never;
 
 export default function Index() {
-  const { user, isLoading, isAuthenticated } = useAuth();
-  const profile = useProfile(user?.id ?? '');
+  const gate = useTrustedProfileGate();
 
-  if (isLoading || (isAuthenticated && profile.isLoading)) {
+  if (gate.state === 'loading') {
     return <View style={styles.fallback} />;
   }
 
-  if (!isAuthenticated) {
+  if (gate.state === 'signed_out') {
     return <Redirect href="/(onboarding)" />;
   }
 
-  if (profile.isError) {
-    return (
-      <View style={styles.fallback}>
-        <Text style={styles.error}>Could not load your profile. Check your connection and try again.</Text>
-      </View>
-    );
+  if (gate.state === 'email_unverified') {
+    return <Redirect href={{ pathname: '/(onboarding)/otp', params: { email: gate.email } }} />;
   }
 
-  if (profile.data === null) {
+  if (gate.state === 'profile_missing') {
     return <Redirect href="/(onboarding)/profile" />;
+  }
+
+  if (gate.state === 'blocked') {
+    return <Redirect href={blockedRoute} />;
+  }
+
+  if (gate.state === 'error') {
+    return <ProfileGateErrorState onRetry={gate.retry} />;
   }
 
   return <Redirect href="/(tabs)" />;
@@ -38,11 +42,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.paper,
     paddingHorizontal: 24,
-  },
-  error: {
-    fontFamily: fonts.serifBold,
-    color: colors.stampRed,
-    fontSize: 16,
-    textAlign: 'center',
   },
 });

@@ -1,4 +1,4 @@
-import { Stack } from 'expo-router';
+import { Redirect, Stack, useSegments } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -16,8 +16,12 @@ import {
 } from '@/shared/providers';
 import { colors } from '@/shared/constants/tokens';
 import { View } from 'react-native';
+import { ProfileGateErrorState, useTrustedProfileGate } from '@/features/profile';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
+
+const blockedRoute = '/blocked' as never;
+const publicRouteRoots = new Set(['(onboarding)', 'auth', 'blocked']);
 
 export default function RootLayout() {
   const fontsLoaded = useAppFonts();
@@ -50,6 +54,36 @@ export default function RootLayout() {
 function RootShell() {
   const c = useThemeColors();
   const { isDark } = useTheme();
+  const segments = useSegments();
+  const gate = useTrustedProfileGate();
+  const rootSegment = segments[0];
+  const isProtectedRoute = Boolean(rootSegment) && !publicRouteRoots.has(rootSegment);
+
+  if (isProtectedRoute) {
+    if (gate.state === 'loading') {
+      return <View style={{ flex: 1, backgroundColor: c.paper }} />;
+    }
+
+    if (gate.state === 'signed_out') {
+      return <Redirect href="/(onboarding)" />;
+    }
+
+    if (gate.state === 'email_unverified') {
+      return <Redirect href={{ pathname: '/(onboarding)/otp', params: { email: gate.email } }} />;
+    }
+
+    if (gate.state === 'profile_missing') {
+      return <Redirect href="/(onboarding)/profile" />;
+    }
+
+    if (gate.state === 'blocked') {
+      return <Redirect href={blockedRoute} />;
+    }
+
+    if (gate.state === 'error') {
+      return <ProfileGateErrorState onRetry={gate.retry} />;
+    }
+  }
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: c.paper }}>
@@ -61,6 +95,7 @@ function RootShell() {
           <Stack.Screen name="(onboarding)" />
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="auth/callback" />
+          <Stack.Screen name="blocked" />
           <Stack.Screen name="user/[id]" options={{ presentation: 'modal' }} />
           <Stack.Screen name="request/sent" options={{ presentation: 'modal' }} />
           <Stack.Screen name="request/incoming" options={{ presentation: 'fullScreenModal' }} />

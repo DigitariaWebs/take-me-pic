@@ -75,6 +75,9 @@ export async function resendSignupVerification(email: string): Promise<void> {
   const { error } = await supabase.auth.resend({
     type: 'signup',
     email,
+    options: {
+      emailRedirectTo: getAuthRedirectUrl(),
+    },
   });
   if (error) throw error;
 }
