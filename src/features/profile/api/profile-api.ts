@@ -2,7 +2,12 @@ import { supabase } from '@/shared/lib/supabase';
 import type { Tables, TablesInsert } from '@/shared/lib/supabase';
 
 export type Profile = Tables<'profiles'>;
-export type CreateProfileInput = TablesInsert<'profiles'>;
+type ProfileInsert = TablesInsert<'profiles'>;
+export type CreateProfileInput = Pick<
+  ProfileInsert,
+  'id' | 'first_name' | 'username' | 'last_name' | 'age' | 'city' | 'languages' | 'bio' | 'phone'
+>;
+export type UpdateProfileInput = Partial<Omit<CreateProfileInput, 'id'>>;
 export type LeaderboardEntry = {
   user_id: string;
   first_name: string;
@@ -27,6 +32,16 @@ export const profileApi = {
     const { data, error } = await supabase
       .from('profiles')
       .insert(input as never)
+      .select('*')
+      .single();
+    if (error) throw error;
+    return data;
+  },
+  async update(id: string, input: UpdateProfileInput): Promise<Profile> {
+    const { data, error } = await supabase
+      .from('profiles')
+      .update(input as never)
+      .eq('id', id)
       .select('*')
       .single();
     if (error) throw error;

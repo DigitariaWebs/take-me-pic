@@ -11,9 +11,19 @@ import { Stamp } from '@/shared/ui/Stamp';
 import { Button } from '@/shared/ui/Button';
 import { fonts, type ThemeColors } from '@/shared/constants/tokens';
 import { useThemeColors } from '@/shared/providers/ThemeProvider';
+import { useAuth } from '@/shared/providers';
 import { t } from '@/shared/lib/i18n';
 import { useLogin } from '../hooks/useLogin';
+import { useResendSignupVerification } from '../hooks/useResendSignupVerification';
 import { useAuthUiStore } from '../store/auth-ui-store';
+
+function isEmailNotConfirmedError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  return error.message.toLowerCase().includes('email not confirmed');
+}
 
 /** Connexion — e-mail + mot de passe, validation légère, → /(tabs). */
 export default function Login() {
@@ -27,7 +37,9 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const login = useLogin();
+  const resendSignupVerification = useResendSignupVerification();
   const setRememberedEmail = useAuthUiStore((s) => s.setRememberedEmail);
+  const { refresh } = useAuth();
 
   const onSubmit = async () => {
     const cleanEmail = email.trim().toLowerCase();
@@ -43,8 +55,22 @@ export default function Login() {
     try {
       await login.mutateAsync({ email: cleanEmail, password });
       setRememberedEmail(cleanEmail);
+      // Sync the auth context from the now-authenticated client before routing
+      // to '/', so the gate resolves immediately instead of flashing a stale
+      // signed-out state. RootShell then keeps a ready user out of onboarding.
+      await refresh();
       router.replace('/');
     } catch (err) {
+      if (isEmailNotConfirmedError(err)) {
+        setRememberedEmail(cleanEmail);
+        try {
+          await resendSignupVerification.mutateAsync(cleanEmail);
+        } catch {
+          // The original confirmation email may still be valid or Supabase may be rate-limiting resend.
+        }
+        router.replace({ pathname: '/(onboarding)/otp', params: { email: cleanEmail } });
+        return;
+      }
       setError(err instanceof Error ? err.message : t('ob.authErrorGeneric'));
     }
   };
@@ -136,7 +162,7 @@ export default function Login() {
       </View>
 
       <View style={[styles.cta, { bottom: insets.bottom + 26 }]}>
-        <Button full variant="ink" onPress={onSubmit} disabled={login.isPending}>
+        <Button full variant="ink" onPress={onSubmit} disabled={login.isPending || resendSignupVerification.isPending}>
           {t('ob.loginCta')}
         </Button>
         <Text style={styles.foot}>
