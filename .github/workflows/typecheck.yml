@@ -1,0 +1,23 @@
+name: quality-gates
+
+# Repo-level fast gate. EAS workflows build + run Maestro on PRs, but they do
+# not type-check — so a tsc regression would only surface after a full native
+# build. This catches it in ~1 minute. Recommended in docs/ci-cd/README.md.
+
+on:
+  pull_request:
+    branches: ['*']
+  workflow_dispatch:
+
+jobs:
+  typecheck:
+    name: TypeScript typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck

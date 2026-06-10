@@ -1,0 +1,8 @@
+appId: com.takemepic.app
+---
+- launchApp
+- openLink: "tmp://profile"
+- extendedWaitUntil:
+    visible: ".*(nom d'utilisateur|username|اسم المستخدم|usuario).*"
+    timeout: 12000
+- assertVisible: ".*(nom d'utilisateur|username|اسم المستخدم|usuario).*"
