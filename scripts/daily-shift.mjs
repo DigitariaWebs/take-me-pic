@@ -13,6 +13,13 @@ const AUTO_START = '<!-- daily-shift:auto:start -->';
 const AUTO_END = '<!-- daily-shift:auto:end -->';
 const MAX_COMMITS = 12;
 
+// Repos tracked by default in addition to this (mobile) repo. Each entry is
+// `absolutePath::label`. Missing paths are skipped silently so the script keeps
+// working on machines that don't have the sibling repos checked out.
+const DEFAULT_INCLUDED_REPOS = [
+  '/Users/macbookpro/Documents/Progix/take-my-pic-web/take-me-pic-web::Web/Admin repo',
+];
+
 function getArg(name) {
   const index = process.argv.indexOf(name);
   if (index === -1) {
@@ -205,7 +212,18 @@ const date = getArg('--date') || formatLocalDate(new Date());
 const nextDate = getNextDate(date);
 const repoRoot = git(['rev-parse', '--show-toplevel'], { cwd: process.cwd() }) || process.cwd();
 const branch = git(['branch', '--show-current'], { cwd: repoRoot });
-const includedRepos = getArgs('--include-repo').map(parseIncludedRepo);
+const includedRepos = [
+  ...DEFAULT_INCLUDED_REPOS,
+  ...getArgs('--include-repo'),
+]
+  .map(parseIncludedRepo)
+  .filter((repo, index, all) => {
+    if (!existsSync(repo.path)) {
+      return false;
+    }
+
+    return all.findIndex((other) => other.path === repo.path) === index;
+  });
 const snapshots = [
   getRepoSnapshot({ repoPath: repoRoot, label: 'Mobile repo', date, nextDate }),
   ...includedRepos.map((repo) => getRepoSnapshot({
