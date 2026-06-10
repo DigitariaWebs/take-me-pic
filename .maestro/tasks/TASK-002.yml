@@ -1,0 +1,22 @@
+appId: com.takemepic.app
+---
+- launchApp
+- runFlow:
+    when:
+      visible: "Open in .*Take Me Pic.*"
+    commands:
+      - tapOn: "Open"
+- runFlow:
+    when:
+      visible: "Apple Account Verification"
+    commands:
+      - tapOn: "Not Now"
+- extendedWaitUntil:
+    visible: ".*(appuie pour commencer|tap to begin|اضغط للبدء|toca para empezar|skip|Not Now|Settings).*"
+    timeout: 30000
+- runFlow:
+    when:
+      visible: "Apple Account Verification"
+    commands:
+      - tapOn: "Not Now"
+- assertVisible: ".*(appuie pour commencer|tap to begin|اضغط للبدء|toca para empezar|skip|Not Now|Settings).*"
