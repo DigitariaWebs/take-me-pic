@@ -76,7 +76,4 @@ Working tree: 1 changed entry
 - [ ] Implement `001-2` Apple and Google sign-in after email/password is stable.
 - [ ] Decide whether the web repo should get its own daily shift commit workflow or only be included in the mobile shift ledger.
 
-## Notes
-
-- `profileApi.create` still uses `input as never` because the hand-authored Supabase type shape does not satisfy the current insert overload; regenerate real Supabase types before tightening that.
-- The shift file now tracks the web repo at `/Users/macbookpro/Documents/Progix/take-my-pic-web/take-me-pic-web`; after the web commit, only `.agent-board/` remains untracked there.
+#

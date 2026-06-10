@@ -30,16 +30,62 @@ source of truth).
 - **zustand** for client state (role, transient UI/feature state).
 - **@supabase/supabase-js** centralized under `src/shared/lib/supabase`.
 
-## Run
+## Run Commands By Environment
+
+### 1) Local development (fast iteration)
 
 ```bash
 npm install
-npx expo start
+npm run start
 ```
 
-Then press `i` for the iOS simulator, or scan the QR with Expo Go on a
-device. The app boots into the splash, walks through 3 onboarding pages
-(including the FR / EN / AR picker), and lands in the main tab bar.
+Then press `i` for iOS simulator or `a` for Android emulator.
+
+Useful local commands:
+
+```bash
+npm run ios       # native iOS run (prebuild/run)
+npm run android   # native Android run (prebuild/run)
+npm run typecheck
+```
+
+### 2) QA / internal testing builds (`preview` profile)
+
+Prerequisite once per machine:
+
+```bash
+npx eas login
+```
+
+Build binaries for testers:
+
+```bash
+npx eas build --platform ios --profile preview
+npx eas build --platform android --profile preview
+```
+
+### 3) Production candidate builds (`production` profile)
+
+Build store-grade binaries:
+
+```bash
+npx eas build --platform ios --profile production
+npx eas build --platform android --profile production
+```
+
+Submit the latest iOS production build to TestFlight:
+
+```bash
+npx eas submit --platform ios --profile production --latest
+```
+
+Optional combined iOS build + auto-submit flow:
+
+```bash
+npx eas build --platform ios --profile production --auto-submit
+```
+
+For the complete command catalog (dev, tests, E2E, CI workflows, deploy/release), see `docs/ci-cd/commands-reference.md`.
 
 ## Project layout
 
