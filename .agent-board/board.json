@@ -1,0 +1,175 @@
+{
+  "project": "Take Me Pic Mobile",
+  "currentFocus": "Supabase-backed authentication and trusted profile foundation",
+  "currentMilestone": "Phase 1 MVP - Auth first",
+  "updated": "2026-06-10",
+  "recommendedStart": "TASK-001",
+  "columns": [
+    "Backlog",
+    "Ready",
+    "In Progress",
+    "Review",
+    "Blocked",
+    "Done"
+  ],
+  "tasks": [
+    {
+      "id": "TASK-001",
+      "title": "Wire Supabase Auth shell and route gate",
+      "status": "Ready",
+      "priority": "P0",
+      "owner": "Agent",
+      "path": ".agent-board/tasks/TASK-001.md",
+      "blockedBy": []
+    },
+    {
+      "id": "TASK-002",
+      "title": "Bootstrap profiles and auth gates",
+      "status": "Backlog",
+      "priority": "P0",
+      "owner": "Agent",
+      "path": ".agent-board/tasks/TASK-002.md",
+      "blockedBy": [
+        "TASK-001"
+      ]
+    },
+    {
+      "id": "TASK-003",
+      "title": "Verify avatar storage and profile media upload",
+      "status": "Backlog",
+      "priority": "P0",
+      "owner": "Agent",
+      "path": ".agent-board/tasks/TASK-003.md",
+      "blockedBy": [
+        "TASK-002"
+      ]
+    },
+    {
+      "id": "TASK-004",
+      "title": "Wire nearby presence and helper map",
+      "status": "Backlog",
+      "priority": "P1",
+      "owner": "Agent",
+      "path": ".agent-board/tasks/TASK-004.md",
+      "blockedBy": [
+        "TASK-002"
+      ]
+    },
+    {
+      "id": "TASK-005",
+      "title": "Wire help request create and accept lifecycle",
+      "status": "Backlog",
+      "priority": "P1",
+      "owner": "Agent",
+      "path": ".agent-board/tasks/TASK-005.md",
+      "blockedBy": [
+        "TASK-004"
+      ]
+    },
+    {
+      "id": "TASK-006",
+      "title": "Wire realtime session chat",
+      "status": "Backlog",
+      "priority": "P1",
+      "owner": "Agent",
+      "path": ".agent-board/tasks/TASK-006.md",
+      "blockedBy": [
+        "TASK-005"
+      ]
+    },
+    {
+      "id": "TASK-007",
+      "title": "Wire session photo transfer",
+      "status": "Backlog",
+      "priority": "P1",
+      "owner": "Agent",
+      "path": ".agent-board/tasks/TASK-007.md",
+      "blockedBy": [
+        "TASK-006"
+      ]
+    },
+    {
+      "id": "TASK-008",
+      "title": "Wire rating, karma, and leaderboard",
+      "status": "Backlog",
+      "priority": "P1",
+      "owner": "Agent",
+      "path": ".agent-board/tasks/TASK-008.md",
+      "blockedBy": [
+        "TASK-007"
+      ]
+    },
+    {
+      "id": "TASK-009",
+      "title": "Wire push notification registration and delivery",
+      "status": "Backlog",
+      "priority": "P1",
+      "owner": "Agent",
+      "path": ".agent-board/tasks/TASK-009.md",
+      "blockedBy": [
+        "TASK-005"
+      ]
+    },
+    {
+      "id": "TASK-010",
+      "title": "Wire trust, safety, and reporting flows",
+      "status": "Backlog",
+      "priority": "P1",
+      "owner": "Agent",
+      "path": ".agent-board/tasks/TASK-010.md",
+      "blockedBy": [
+        "TASK-002"
+      ]
+    },
+    {
+      "id": "TASK-011",
+      "title": "Add Phase 1 analytics and integration hardening",
+      "status": "Backlog",
+      "priority": "P1",
+      "owner": "Agent",
+      "path": ".agent-board/tasks/TASK-011.md",
+      "blockedBy": [
+        "TASK-004",
+        "TASK-005",
+        "TASK-006",
+        "TASK-007",
+        "TASK-008",
+        "TASK-009",
+        "TASK-010"
+      ]
+    },
+    {
+      "id": "TASK-012",
+      "title": "Wire community feed backend slice",
+      "status": "Backlog",
+      "priority": "P2",
+      "owner": "Agent",
+      "path": ".agent-board/tasks/TASK-012.md",
+      "blockedBy": [
+        "TASK-011"
+      ]
+    },
+    {
+      "id": "TASK-013",
+      "title": "Wire photo spots backend slice",
+      "status": "Backlog",
+      "priority": "P2",
+      "owner": "Agent",
+      "path": ".agent-board/tasks/TASK-013.md",
+      "blockedBy": [
+        "TASK-011"
+      ]
+    },
+    {
+      "id": "TASK-014",
+      "title": "Prepare premium entitlements foundation",
+      "status": "Backlog",
+      "priority": "P2",
+      "owner": "Agent",
+      "path": ".agent-board/tasks/TASK-014.md",
+      "blockedBy": [
+        "TASK-011"
+      ]
+    }
+  ]
+}

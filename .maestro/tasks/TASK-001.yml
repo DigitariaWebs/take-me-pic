@@ -1,0 +1,10 @@
+appId: com.takemepic.app
+---
+- launchApp
+- tapOn:
+    point: "50%,50%"
+- extendedWaitUntil:
+    visible: ".*(se connecter|sign in|تسجيل الدخول|inicia sesión).*"
+    timeout: 12000
+- tapOn: ".*(se connecter|sign in|تسجيل الدخول|inicia sesión).*"
+- assertVisible: ".*(CONNEXION|SIGN IN|تسجيل الدخول|INICIO DE SESIÓN).*"

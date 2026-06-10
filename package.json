@@ -47,6 +47,9 @@
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "shift:daily": "node scripts/daily-shift.mjs",
+    "board": "node scripts/agent-board.mjs list",
+    "board:next": "node scripts/agent-board.mjs next",
+    "seed:test": "node scripts/seed-test-users.mjs",
     "postinstall": "patch-package"
   },
   "private": true,

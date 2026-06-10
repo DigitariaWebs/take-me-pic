@@ -1,0 +1,12 @@
+appId: com.takemepic.app
+---
+- launchApp
+- tapOn:
+    point: "50%,50%"
+- extendedWaitUntil:
+    visible: ".*(la suite|next|التالي|siguiente).*"
+    timeout: 12000
+- tapOn: ".*(la suite|next|التالي|siguiente).*"
+- tapOn: ".*(la suite|next|التالي|siguiente).*"
+- tapOn: ".*(on y va|let's go|هيا بنا|vamos).*"
+- assertVisible: ".*(quelques papiers|some paperwork|بعض التفاصيل|algunos datos).*"

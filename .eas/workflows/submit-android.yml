@@ -1,0 +1,20 @@
+name: submit-android
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build_android_production:
+    name: Build Android production
+    type: build
+    params:
+      platform: android
+      profile: production
+  submit_android_play_store:
+    name: Submit Android to Play Store
+    needs: [build_android_production]
+    type: submit
+    params:
+      platform: android
+      profile: production
+      build_id: ${{ needs.build_android_production.outputs.build_id }}
