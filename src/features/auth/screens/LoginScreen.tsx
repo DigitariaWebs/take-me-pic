@@ -11,6 +11,7 @@ import { Stamp } from '@/shared/ui/Stamp';
 import { Button } from '@/shared/ui/Button';
 import { fonts, type ThemeColors } from '@/shared/constants/tokens';
 import { useThemeColors } from '@/shared/providers/ThemeProvider';
+import { useAuth } from '@/shared/providers';
 import { t } from '@/shared/lib/i18n';
 import { useLogin } from '../hooks/useLogin';
 import { useResendSignupVerification } from '../hooks/useResendSignupVerification';
@@ -38,6 +39,7 @@ export default function Login() {
   const login = useLogin();
   const resendSignupVerification = useResendSignupVerification();
   const setRememberedEmail = useAuthUiStore((s) => s.setRememberedEmail);
+  const { refresh } = useAuth();
 
   const onSubmit = async () => {
     const cleanEmail = email.trim().toLowerCase();
@@ -53,6 +55,10 @@ export default function Login() {
     try {
       await login.mutateAsync({ email: cleanEmail, password });
       setRememberedEmail(cleanEmail);
+      // Sync the auth context from the now-authenticated client before routing
+      // to '/', so the gate resolves immediately instead of flashing a stale
+      // signed-out state. RootShell then keeps a ready user out of onboarding.
+      await refresh();
       router.replace('/');
     } catch (err) {
       if (isEmailNotConfirmedError(err)) {

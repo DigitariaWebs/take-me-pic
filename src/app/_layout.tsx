@@ -58,6 +58,16 @@ function RootShell() {
   const gate = useTrustedProfileGate();
   const rootSegment = segments[0];
   const isProtectedRoute = Boolean(rootSegment) && !publicRouteRoots.has(rootSegment);
+  const isAuthFunnelRoute = rootSegment === '(onboarding)' || rootSegment === 'auth';
+
+  // A fully trusted (ready) user must never be stranded on the onboarding/auth
+  // funnel — e.g. after login, or when the dev client restores a pre-login
+  // navigation state. Pull them into the app. Funnel states (signed_out,
+  // email_unverified, profile_missing, blocked) intentionally stay put so the
+  // user can finish the step they're on.
+  if (isAuthFunnelRoute && gate.state === 'ready') {
+    return <Redirect href="/(tabs)" />;
+  }
 
   if (isProtectedRoute) {
     if (gate.state === 'loading') {
