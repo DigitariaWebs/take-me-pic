@@ -46,3 +46,22 @@ export async function removeFromBucket(params: {
   const { error } = await supabase.storage.from(bucket).remove(paths);
   if (error) throw error;
 }
+
+const AVATAR_BUCKET: StorageBucket = 'avatars';
+
+/**
+ * Upload a user-owned avatar to `{userId}/avatar.<ext>` and return its public URL.
+ * The path is scoped to the user's own folder so storage RLS only lets the owner
+ * write it; the bucket is public so the returned URL renders without auth.
+ */
+export async function uploadAvatar(params: {
+  userId: string;
+  data: ArrayBuffer | Blob | Uint8Array;
+  contentType?: string;
+  ext?: string;
+}): Promise<string> {
+  const { userId, data, contentType = 'image/jpeg', ext = 'jpg' } = params;
+  const path = `${userId}/avatar.${ext}`;
+  await uploadToBucket({ bucket: AVATAR_BUCKET, path, data, contentType, upsert: true });
+  return getPublicUrl({ bucket: AVATAR_BUCKET, path });
+}

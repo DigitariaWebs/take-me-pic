@@ -7,7 +7,9 @@ export type CreateProfileInput = Pick<
   ProfileInsert,
   'id' | 'first_name' | 'username' | 'last_name' | 'age' | 'city' | 'languages' | 'bio' | 'phone'
 >;
-export type UpdateProfileInput = Partial<Omit<CreateProfileInput, 'id'>>;
+export type UpdateProfileInput = Partial<Omit<CreateProfileInput, 'id'>> & {
+  avatar_url?: string | null;
+};
 export type LeaderboardEntry = {
   user_id: string;
   first_name: string;

@@ -1,6 +1,6 @@
 # TASK-003 - Verify Avatar Storage and Profile Media Upload
 
-Status: Backlog
+Status: Review
 Priority: P0
 Project: Take Me Pic Mobile
 Milestone: Phase 1 MVP - Auth first
@@ -43,7 +43,23 @@ Profile and helper pins can render the avatar
 - [ ] Public avatar reads work without exposing write access.
 - [ ] Profile write stores the avatar reference after upload succeeds.
 - [ ] Avatar upload failure does not create a partially broken trusted profile.
-- [ ] `npm run typecheck` passes.
+- [x] `npm run typecheck` passes.
+
+## Implementation Notes (this PR)
+
+- `supabase/migrations/0004_avatars_storage.sql`: public `avatars` bucket,
+  owner-scoped `storage.objects` policies (`{auth.uid()}/...` folder), and the
+  `profiles.avatar_url` column grant 0003 omitted.
+- `uploadAvatar()` helper (`{userId}/avatar.<ext>`, upsert) + `useUploadAvatar`
+  hook that uploads first and only persists `avatar_url` on success, so a failed
+  upload can't leave a broken profile reference.
+- Remote `avatars` bucket already exists and is reachable with the publishable
+  key; 0004 makes the bucket config + policies reproducible.
+- **Deferred:** the avatar picker UI (`expo-image-picker` is not installed and
+  is a native dep needing a fresh dev build). This PR ships the upload/persist
+  data layer; the picker UI is a follow-up. Avatar stays optional per scope.
+- **Pending manual/RLS verification (after applying 0004):** upload with the
+  publishable key, cross-user write denial, public read, persist-after-success.
 
 ## Technical Notes
 
