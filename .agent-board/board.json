@@ -16,7 +16,7 @@
     {
       "id": "TASK-001",
       "title": "Wire Supabase Auth shell and route gate",
-      "status": "Ready",
+      "status": "Done",
       "priority": "P0",
       "owner": "Agent",
       "path": ".agent-board/tasks/TASK-001.md",
@@ -25,7 +25,7 @@
     {
       "id": "TASK-002",
       "title": "Bootstrap profiles and auth gates",
-      "status": "Backlog",
+      "status": "Done",
       "priority": "P0",
       "owner": "Agent",
       "path": ".agent-board/tasks/TASK-002.md",

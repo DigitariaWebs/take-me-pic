@@ -1,6 +1,6 @@
 # TASK-002 — Harden Trusted Profile Gates
 
-Status: Backlog
+Status: Done
 Priority: P0
 Project: Take Me Pic Mobile
 Milestone: Phase 1 MVP — Auth first
