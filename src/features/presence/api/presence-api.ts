@@ -1,7 +1,19 @@
 import { supabase } from '@/shared/lib/supabase';
-import type { PresenceStatus, Tables } from '@/shared/lib/supabase';
+import type { PresenceStatus } from '@/shared/lib/supabase';
 
-export type NearbyHelper = Tables<'profiles'>;
+// Shape returned by the find_available_helpers RPC (profile signals + real
+// coordinates/distance from the presence point).
+export type NearbyHelper = {
+  user_id: string;
+  first_name: string;
+  avatar_url: string | null;
+  karma: number;
+  rating: number;
+  verified: boolean;
+  distance_m: number;
+  lat: number;
+  lng: number;
+};
 
 // PostGIS geography is written as EWKT — note the lng/lat order and SRID 4326.
 function pointEwkt(lat: number, lng: number): string {

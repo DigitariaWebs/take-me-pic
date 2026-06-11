@@ -292,8 +292,18 @@ export interface Database {
     };
     Functions: {
       find_available_helpers: {
-        Args: { lat: number; lng: number; radius_m: number };
-        Returns: Database['public']['Tables']['profiles']['Row'][];
+        Args: { lng: number; lat: number; radius_m?: number };
+        Returns: {
+          user_id: string;
+          first_name: string;
+          avatar_url: string | null;
+          karma: number;
+          rating: number;
+          verified: boolean;
+          distance_m: number;
+          lat: number;
+          lng: number;
+        }[];
       };
     };
     Enums: {

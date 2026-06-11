@@ -24,19 +24,18 @@ import { useThemeColors, useTheme } from '@/shared/providers/ThemeProvider';
 import { nearby, seekers, type User } from '@/shared/data/mock';
 import { useRole } from '@/shared/providers/RoleProvider';
 import { useAuth } from '@/shared/providers';
+import { useProfile } from '@/features/profile';
 import { useMapPresence, useNearbyHelpers, type NearbyHelper } from '@/features/presence';
 import { t } from '@/shared/lib/i18n';
 
 const FALLBACK_AVATAR = 'https://i.pravatar.cc/300?img=12';
 const DEFAULT_RADIUS_M = 2000;
 
-// Map a real helper profile to the minimal shape the map pin renders. The RPC
-// returns profiles without per-helper coordinates, so positions use the same
-// deterministic scatter as before (real identity, cosmetic placement) until the
-// RPC is extended to return location/distance — see docs/next-meeting-questions.
+// Map a real helper row to the shape the map pin renders. find_available_helpers
+// returns real coordinates + distance, so pins sit at true positions.
 function helperToPin(p: NearbyHelper) {
   return {
-    id: p.id,
+    id: p.user_id,
     firstName: p.first_name,
     avatar: p.avatar_url ?? FALLBACK_AVATAR,
     rating: p.rating,
@@ -482,6 +481,8 @@ export default function CarteTab() {
   const { user } = useAuth();
   const presence = useMapPresence(user?.id);
   const available = presence.visible;
+  const { data: myProfile } = useProfile(user?.id ?? '');
+  const myAvatar = myProfile?.avatar_url ?? FALLBACK_AVATAR;
 
   // ── role drives the map: 'helper' (I help → see seekers) vs 'seeker' (I want a
   //    photo → see helpers). Persisted globally so the whole app adapts.
@@ -573,22 +574,14 @@ export default function CarteTab() {
   const helpersQuery = useNearbyHelpers(queryCenter, radiusM, role === 'seeker');
   const helperRows = helpersQuery.data ?? [];
 
-  // Real helper identities placed with the deterministic scatter (cosmetic
-  // position/distance until the RPC returns coordinates — see meeting questions).
-  // Filters that map to real profile fields are applied here; geo + availability
-  // filtering is already done server-side by the RPC.
+  // Real helper positions + distance from the RPC. Geo + availability filtering
+  // is already done server-side; client filters only map to profile fields.
   const pinned = helperRows
-    .map((p, i) => {
-      const radius = 0.0011 + (i / Math.max(1, helperRows.length)) * 0.0085;
-      const angle = i * GOLDEN;
-      const dx = Math.cos(angle) * radius;
-      const dy = Math.sin(angle) * radius;
-      return {
-        user: helperToPin(p),
-        coordinates: { latitude: center.latitude + dy, longitude: center.longitude + dx },
-        distanceM: Math.round(Math.sqrt(dx * dx + dy * dy) * 111000),
-      };
-    })
+    .map((p) => ({
+      user: helperToPin(p),
+      coordinates: { latitude: p.lat, longitude: p.lng },
+      distanceM: Math.round(p.distance_m),
+    }))
     .filter((p) => {
       if (filterDistance !== null && p.distanceM > DISTANCE_MAX_M[filterDistance]) return false;
       if (filterVerified && !p.user.verified) return false;
@@ -673,7 +666,7 @@ export default function CarteTab() {
         >
           {/* Seeker role → see HELPERS to photograph me; helper role → see SEEKERS to help. */}
           {role === 'seeker'
-            ? pinned.map((p, i) => (
+            ? pinned.map((p) => (
                 <Marker
                   key={p.user.id}
                   coordinate={p.coordinates}
@@ -681,7 +674,7 @@ export default function CarteTab() {
                   calloutAnchor={{ x: 0.5, y: 0 }}
                   onPress={() => openUser(p.user.id, p.distanceM)}
                 >
-                  <CarnetMapPin user={p.user} distanceM={p.distanceM} highlight={i === 0} />
+                  <CarnetMapPin user={p.user} distanceM={p.distanceM} highlight={false} />
                 </Marker>
               ))
             : seekerPinned.map((p) => (
@@ -696,11 +689,18 @@ export default function CarteTab() {
                 </Marker>
               ))}
 
-          {/* Self marker */}
-          {available && (
-            <Marker coordinate={center} anchor={{ x: 0.5, y: 0.5 }}>
-              <View style={styles.selfRing}>
-                <View style={styles.selfDot} />
+          {/* Self marker — the current user's own avatar at their real GPS
+              position, highlighted gold to stand out from other helpers. */}
+          {available && presence.coords && (
+            <Marker
+              coordinate={{ latitude: presence.coords.lat, longitude: presence.coords.lng }}
+              anchor={{ x: 0.5, y: 1 }}
+            >
+              <View style={{ alignItems: 'center' }}>
+                <View style={[styles.pinTag, { borderColor: colors.goldDeep, backgroundColor: colors.goldLight }]}>
+                  <Text style={styles.pinTagText}>moi</Text>
+                </View>
+                <Pin color="gold" size={52} source={{ uri: myAvatar }} />
               </View>
             </Marker>
           )}
