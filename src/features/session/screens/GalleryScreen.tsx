@@ -109,7 +109,7 @@ export default function Gallery() {
           full
           icon={<Heart size={18} color={colors.ink} />}
           style={{ flex: 1 }}
-          onPress={() => router.push('/session/rating')}
+          onPress={() => router.push(requestId != null ? `/session/rating?request=${requestId}` : '/session/rating')}
         >
           {t('gallery.rate', { name: '' })}
         </Button>
