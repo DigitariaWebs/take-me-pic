@@ -12,3 +12,11 @@ Open product and engineering questions to resolve before implementation locks.
 
 2. ~~`find_available_helpers` returns no per-helper location~~ **(resolved — migration 0005 returns lat/lng + distance_m; pins now sit at real positions).**
    - Open privacy follow-up: 0005 returns the exact presence point. Decide whether to expose **coarse/snapped** location instead of precise GPS for nearby helpers.
+
+3. Should the admin panel display or fetch users' current location?
+   - Web-side recommended answer (compliance-first): **not for MVP, and never as raw live presence.**
+     - Today the admin panel reads **no coordinates at all** — the PostGIS columns are deliberately not selected or decoded (web TASK-006 hardening note, ADR-0004 boundary). `presence` is written by mobile but consumed only by `find_available_helpers` matching.
+     - Purpose limitation: users share presence **to be matched with nearby helpers**. Repurposing it as back-office live tracking is a different processing purpose and would need its own justification, disclosure in the privacy policy, and arguably its own consent — the riskiest interpretation under GDPR for an EU-facing product.
+     - If support genuinely needs location context, prefer the **request-anchored snapshot** (`help_requests.location`, captured when the request was created) over live `presence`: it is tied to a concrete session-review purpose, not ongoing surveillance.
+     - If/when we expose anything, the web side will require: **coarse precision** (snapped/rounded, mirroring the question-2 decision), a dedicated staff **capability** (not blanket staff access), an **audit log entry per view** (same pattern as Privileged content review), and respect for `share_radius_m`/presence-off state.
+     - Decision needed from the meeting: is there a real support scenario (safety incident, no-show dispute) that justifies even the snapshot view in phase 1, or do we defer entirely?
