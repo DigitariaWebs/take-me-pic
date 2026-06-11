@@ -17,6 +17,12 @@ Replace mock nearby helpers with Supabase-backed presence so requesters can see 
 - Use the `find_available_helpers` RPC for radius lookup.
 - Exclude banned, blocked, unavailable, and stale-presence users.
 - Handle denied location permission without writing precise presence.
+- Move the map visibility toggle (`visible sur la carte`) from settings to the map/home screen as the single entry/exit control for presence sharing.
+- Remove `visible sur la carte` from settings.
+- Remove profile role buttons (`je veux une photo`, `je veux aider`) from the profile screen.
+- Keep helper discovery visible when presence sharing is off, but disable helper-offer/presence-broadcast actions until the user explicitly enables map visibility.
+- Use event-driven presence updates only; do not add heartbeat polling.
+- Refresh presence when the user taps the current-location button (explicit refresh action).
 
 ## User Flow
 
@@ -24,7 +30,19 @@ Verified user opens map
 
 .
 
+User toggles map visibility on
+
+.
+
 App requests location permission
+
+.
+
+App writes scoped presence only after explicit opt-in and permission grant
+
+.
+
+User taps current-location button to refresh location/presence when needed
 
 .
 
@@ -37,10 +55,20 @@ Requester sees trusted face-pins with karma/profile signals
 ## Acceptance Criteria
 
 - [ ] Location denied state is explicit and does not write precise presence.
-- [ ] Available status writes a scoped presence row.
+- [ ] Presence is never written when visibility toggle is off.
+- [ ] Turning visibility on writes one scoped presence update after permission grant.
+- [ ] Turning visibility off clears or sets offline presence server-side.
+- [ ] Current-location button refreshes location and triggers one explicit presence refresh when visibility is on.
+- [ ] No heartbeat timer/background interval is used for presence updates.
 - [ ] Nearby lookup returns helpers by radius and excludes unsafe users.
 - [ ] Stale presence no longer appears.
 - [ ] UI keeps the approved map design.
+- [ ] Map loading is measured and classified:
+  - acceptable: first map paint <= 2.0s on normal network/device
+  - target: first map paint <= 1.0s for MVP seeded nearby query in normal conditions
+  - issue: repeated loads > 2.0s or visible jank/freeze during pan/zoom
+- [ ] Settings no longer contains `visible sur la carte`.
+- [ ] Profile no longer shows `je veux une photo` and `je veux aider`.
 - [ ] `npm run typecheck` passes.
 
 ## Technical Notes
@@ -48,6 +76,14 @@ Requester sees trusted face-pins with karma/profile signals
 - Source docs: `docs/specs/005-presence-nearby/spec.md`, `docs/features/phase_1/proximity_presence_flow.md`.
 - Keep precise GPS session-scoped and privacy-aware.
 - Use PostGIS/RPC; avoid client-side global location filtering.
+- Make the current-location button semantics explicit in UI copy (locate + refresh).
+- Recommended Expo/React Native implementation approach:
+  - use one map screen state machine (`idle`, `locating`, `loading_helpers`, `ready`, `error`) to avoid inconsistent UI states
+  - render map shell first, then load helpers asynchronously; do not block first paint on helper query
+  - debounce user-driven filter/radius changes before RPC calls
+  - cache last successful nearby result briefly (short TTL) for fast return to map
+  - cap marker count for initial render and progressively show more only when needed
+  - keep server-side geo filtering in RPC; do not move distance filtering to client for large sets
 
 ## Dependencies
 
@@ -56,5 +92,6 @@ Requester sees trusted face-pins with karma/profile signals
 ## Verification
 
 - Manual permission granted/denied paths.
+- Manual visibility toggle on/off and explicit refresh-on-current-location path.
 - Seeded nearby helper query.
 - Radius boundary check.
