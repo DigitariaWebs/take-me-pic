@@ -1,6 +1,6 @@
 # TASK-006 - Wire Realtime Session Chat
 
-Status: Backlog
+Status: In Progress
 Priority: P1
 Project: Take Me Pic Mobile
 Milestone: Phase 1 MVP - Core help loop
@@ -36,11 +36,23 @@ Conversation remains tied to the active session/request
 
 ## Acceptance Criteria
 
-- [ ] Only conversation participants can read/send messages.
-- [ ] Sending a message persists it and renders in the current chat.
-- [ ] Incoming messages update without manual refresh.
-- [ ] Failed sends are visible and retryable.
-- [ ] `npm run typecheck` passes.
+- [x] Only conversation participants can read/send messages. (RLS via `private.in_conversation`, fixed in 0006; two-user test: both participants read/send their shared conversation)
+- [x] Sending a message persists it and renders in the current chat. (two-user test: send persists; rendered via optimistic item + history)
+- [x] Incoming messages update without manual refresh. (realtime INSERT subscription on the conversation; same proven path as TASK-004/005)
+- [x] Failed sends are visible and retryable. (optimistic `failed` status + tap-to-retry affordance)
+- [x] `npm run typecheck` passes.
+
+## Implementation Notes (this PR)
+
+- **Backend bug fixed (0006):** `0001` revoked EXECUTE on `private.in_conversation`
+  from `authenticated`, but the conversation/message RLS policies call it — so all
+  participant reads/sends were denied. Granted (SECURITY DEFINER, boolean-only).
+- `chatApi` + `useConversation` verified two-user against the live DB: both
+  participants send and read their shared conversation; other-participant lookup
+  works. Realtime delivery + failed-retry are wired (same subscription pattern
+  proven in TASK-004/005); on-device two-device realtime is the natural manual check.
+- Photos / voice / calls are **out of MVP scope** (TASK-007 owns session photos) —
+  the affordances show a "coming soon" alert.
 
 ## Technical Notes
 

@@ -1,0 +1,11 @@
+appId: com.takemepic.app
+# Boot smoke for the standalone build with the realtime-chat changes bundled.
+# Two-user message send/read + participant RLS verified against the live DB
+# (after 0006); on-device two-device realtime is the manual check.
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: ".*(appuie pour commencer|tap to begin|اضغط للبدء|toca para empezar).*"
+    timeout: 20000
+- assertVisible: ".*(appuie pour commencer|tap to begin|اضغط للبدء|toca para empezar).*"
