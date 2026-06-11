@@ -41,6 +41,7 @@ Profile and helper pins can render the avatar
 - [ ] Avatar upload works with the publishable client key.
 - [ ] User cannot overwrite another user's avatar path.
 - [ ] Public avatar reads work without exposing write access.
+- [x] Link profile page to real data alongside avatar (MyProfileScreen wired to useProfile; on-device pixels pending a standalone build).
 - [ ] Profile write stores the avatar reference after upload succeeds.
 - [ ] Avatar upload failure does not create a partially broken trusted profile.
 - [x] `npm run typecheck` passes.
