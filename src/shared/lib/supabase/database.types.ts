@@ -305,6 +305,17 @@ export interface Database {
           lng: number;
         }[];
       };
+      accept_help_request: {
+        Args: { request_id: number };
+        Returns: {
+          help_request_id: number;
+          conversation_id: number | null;
+          status: RequestStatus;
+          requester_id: string;
+          helper_id: string | null;
+          accepted_at: string | null;
+        }[];
+      };
     };
     Enums: {
       presence_status: PresenceStatus;
