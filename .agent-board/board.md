@@ -3,7 +3,7 @@
 Project: Take Me Pic Mobile
 Current focus: Supabase-backed authentication and trusted profile foundation
 Current milestone: Phase 1 MVP — Auth first
-Updated: 2026-06-10
+Updated: 2026-06-11
 
 ## Columns
 
@@ -20,7 +20,7 @@ Updated: 2026-06-10
 | --- | --- | --- | --- | --- |
 | TASK-001 | Wire Supabase Auth shell and route gate | Done | Agent | P0 |
 | TASK-002 | Bootstrap profiles and auth gates | Done | Agent | P0 |
-| TASK-003 | Verify avatar storage and profile media upload | Review | Agent | P0 |
+| TASK-003 | Verify avatar storage and profile media upload | Done | Agent | P0 |
 | TASK-004 | Wire nearby presence and helper map | Backlog | Agent | P1 |
 | TASK-005 | Wire help request create and accept lifecycle | Backlog | Agent | P1 |
 | TASK-006 | Wire realtime session chat | Backlog | Agent | P1 |
