@@ -69,7 +69,7 @@
     {
       "id": "TASK-006",
       "title": "Wire realtime session chat",
-      "status": "Review",
+      "status": "Done",
       "priority": "P1",
       "owner": "Agent",
       "path": ".agent-board/tasks/TASK-006.md",
