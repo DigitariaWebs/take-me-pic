@@ -58,7 +58,7 @@
     {
       "id": "TASK-005",
       "title": "Wire help request create and accept lifecycle",
-      "status": "Review",
+      "status": "Done",
       "priority": "P1",
       "owner": "Agent",
       "path": ".agent-board/tasks/TASK-005.md",

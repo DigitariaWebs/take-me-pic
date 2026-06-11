@@ -22,7 +22,7 @@ Updated: 2026-06-11
 | TASK-002 | Bootstrap profiles and auth gates | Done | Agent | P0 |
 | TASK-003 | Verify avatar storage and profile media upload | Done | Agent | P0 |
 | TASK-004 | Wire nearby presence and helper map | Done | Agent | P1 |
-| TASK-005 | Wire help request create and accept lifecycle | Review | Agent | P1 |
+| TASK-005 | Wire help request create and accept lifecycle | Done | Agent | P1 |
 | TASK-006 | Wire realtime session chat | Backlog | Agent | P1 |
 | TASK-007 | Wire session photo transfer | Backlog | Agent | P1 |
 | TASK-008 | Wire rating, karma, and leaderboard | Backlog | Agent | P1 |
