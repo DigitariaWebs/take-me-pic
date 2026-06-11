@@ -4,8 +4,10 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
+  Text,
   View,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -16,287 +18,84 @@ import { t } from '@/shared/lib/i18n';
 import { PaperBackground } from '@/shared/ui/PaperBackground';
 import { ChatHeader } from '@/features/chat/components/ChatHeader';
 import { MessageBubble } from '@/features/chat/components/MessageBubble';
-import { TypingIndicator } from '@/features/chat/components/TypingIndicator';
 import { QuickReplies } from '@/features/chat/components/QuickReplies';
 import { Composer } from '@/features/chat/components/Composer';
-import { AttachmentSheet } from '@/features/chat/components/AttachmentSheet';
 
-import type { ChatMessage, AttachmentKind } from '@/features/chat/types';
-import { findUser } from '@/shared/data/mock';
+import type { ChatMessage, ChatPartner } from '@/features/chat/types';
+import { fonts } from '@/shared/constants/tokens';
+import { useThemeColors } from '@/shared/providers/ThemeProvider';
+import { useAuth } from '@/shared/providers';
+import { useProfile } from '@/features/profile';
+import { chatApi } from '@/features/chat/api/chat-api';
+import { useConversation, type ChatItem } from '@/features/chat/hooks/useConversation';
 
-// ─── ID counter (module-level, never Math.random at module scope) ─────────────
-let _msgId = 0;
-function nextId(): string {
-  _msgId += 1;
-  return `m${_msgId}`;
+function fmtTime(iso: string): string {
+  const d = new Date(iso);
+  return `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-function nowTime(): string {
-  const d = new Date();
-  const h = d.getHours();
-  const m = d.getMinutes().toString().padStart(2, '0');
-  return `${h}:${m}`;
-}
-
-// Deterministic picsum image seeds so we never call Math.random at module scope
-const IMAGE_SEEDS = ['paris42', 'lens50', 'street', 'place'];
-let _imageSeedIdx = 0;
-function nextImageUri(): string {
-  const seed = IMAGE_SEEDS[_imageSeedIdx % IMAGE_SEEDS.length];
-  _imageSeedIdx += 1;
-  return `https://picsum.photos/seed/${seed}/400/400`;
-}
-
-const MAP_URI = 'https://picsum.photos/seed/map77/400/300';
-
-// ─── Canned replies (no emoji, rotating) ─────────────────────────────────────
-const CANNED_REPLY_KEYS = [
-  'chatUi.canned0',
-  'chatUi.canned1',
-  'chatUi.canned2',
-  'chatUi.canned3',
-  'chatUi.canned4',
-  'chatUi.canned5',
-] as const;
-let _replyIdx = 0;
-function nextCannedReply(): string {
-  const r = t(CANNED_REPLY_KEYS[_replyIdx % CANNED_REPLY_KEYS.length]);
-  _replyIdx += 1;
-  return r;
-}
-
-// ─── Seed messages (NO emoji, clean) ─────────────────────────────────────────
-const SEED_MESSAGES: ChatMessage[] = [
-  {
-    id: nextId(),
-    kind: 'system',
-    text: t('chatUi.sessionBanner', { time: '9:42' }),
-    incoming: true,
-    time: '9:42',
-  },
-  {
-    id: nextId(),
+// View-model item → the bubble's ChatMessage shape. Failure is surfaced by a
+// retry affordance under the bubble (see render), not a bubble status.
+function toChatMessage(item: ChatItem, index: number): ChatMessage {
+  return {
+    id: item.key,
     kind: 'text',
-    text: t('chatUi.seedMsg1'),
-    incoming: true,
-    time: '9:43',
-    rotate: -1,
-  },
-  {
-    id: nextId(),
-    kind: 'text',
-    text: t('chatUi.seedMsg2'),
-    incoming: false,
-    time: '9:44',
-    status: 'read',
-    rotate: 1,
-  },
-  {
-    id: nextId(),
-    kind: 'text',
-    text: t('chatUi.seedMsg3'),
-    incoming: true,
-    time: '9:44',
-    rotate: -1.5,
-  },
-  {
-    id: nextId(),
-    kind: 'text',
-    text: t('chatUi.seedMsg4'),
-    incoming: false,
-    time: '9:45',
-    status: 'read',
-    rotate: -1,
-  },
-];
-
-// ─── Tilt helpers (alternating, no Math.random) ──────────────────────────────
-let _tiltFlip = true;
-function nextTilt(): number {
-  _tiltFlip = !_tiltFlip;
-  return _tiltFlip ? 1 : -1;
+    text: item.body,
+    incoming: item.incoming,
+    time: fmtTime(item.createdAt),
+    status: item.incoming ? undefined : item.status === 'sending' ? 'sending' : 'read',
+    rotate: index % 2 === 0 ? -1 : 1,
+  };
 }
 
-// ─── Screen ───────────────────────────────────────────────────────────────────
 export default function ChatScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const colors = useThemeColors();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const user = findUser(id);
+  const conversationId = id ? Number(id) : null;
 
-  const [messages, setMessages] = useState<ChatMessage[]>(SEED_MESSAGES);
-  const [input, setInput] = useState('');
-  const [typing, setTyping] = useState(false);
-  const [recording, setRecording] = useState(false);
-  const [recordSeconds, setRecordSeconds] = useState(0);
-  const [attachVisible, setAttachVisible] = useState(false);
+  const { user } = useAuth();
+  const meId = user?.id;
+  const { items, send, retry } = useConversation(conversationId, meId);
 
-  const scrollRef = useRef<ScrollView>(null);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  // Auto-scroll whenever messages or typing changes
+  // The other participant (for the header).
+  const [otherId, setOtherId] = useState<string | null>(null);
   useEffect(() => {
-    const timer = setTimeout(() => {
-      scrollRef.current?.scrollToEnd({ animated: true });
-    }, 60);
-    return () => clearTimeout(timer);
-  }, [messages, typing]);
+    if (conversationId == null || !meId) return;
+    let active = true;
+    void chatApi.getOtherParticipantId(conversationId, meId).then((oid) => {
+      if (active) setOtherId(oid);
+    });
+    return () => {
+      active = false;
+    };
+  }, [conversationId, meId]);
+  const { data: other } = useProfile(otherId ?? '');
+  const headerUser = {
+    firstName: other?.first_name ?? '',
+    lastName: other?.last_name ?? null,
+    avatar: other?.avatar_url ?? 'https://i.pravatar.cc/300?img=12',
+  } as unknown as ChatPartner;
 
-  // ── sendText ────────────────────────────────────────────────────────────────
-  function sendText(text: string) {
+  const [input, setInput] = useState('');
+  const scrollRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 60);
+    return () => clearTimeout(timer);
+  }, [items]);
+
+  function handleSend(text: string) {
     const trimmed = text.trim();
     if (!trimmed) return;
-
-    const msgId = nextId();
-    const outgoing: ChatMessage = {
-      id: msgId,
-      kind: 'text',
-      text: trimmed,
-      incoming: false,
-      time: nowTime(),
-      status: 'sending',
-      rotate: nextTilt(),
-    };
-
-    setMessages((prev) => [...prev, outgoing]);
+    send(trimmed);
     setInput('');
-
-    // After 400 ms → 'sent'
-    setTimeout(() => {
-      setMessages((prev) =>
-        prev.map((m) => (m.id === msgId ? { ...m, status: 'sent' as const } : m))
-      );
-      // Then simulate reply
-      simulateReply();
-    }, 400);
   }
 
-  // ── simulateReply ───────────────────────────────────────────────────────────
-  function simulateReply() {
-    setTyping(true);
-    setTimeout(() => {
-      setTyping(false);
-      const reply: ChatMessage = {
-        id: nextId(),
-        kind: 'text',
-        text: nextCannedReply(),
-        incoming: true,
-        time: nowTime(),
-        rotate: nextTilt() * -1,
-      };
-      // Mark all prior outgoing messages as 'read' and push reply
-      setMessages((prev) => [
-        ...prev.map((m) =>
-          !m.incoming && m.status ? { ...m, status: 'read' as const } : m
-        ),
-        reply,
-      ]);
-    }, 1400);
-  }
-
-  // ── onRecordStart ───────────────────────────────────────────────────────────
-  function handleRecordStart() {
-    setRecording(true);
-    setRecordSeconds(0);
-    timerRef.current = setInterval(() => {
-      setRecordSeconds((s) => s + 1);
-    }, 1000);
-  }
-
-  // ── onRecordStop ────────────────────────────────────────────────────────────
-  function handleRecordStop() {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-    setRecording(false);
-    // Capture current recordSeconds via functional update
-    setRecordSeconds((secs) => {
-      if (secs >= 1) {
-        const voiceMsg: ChatMessage = {
-          id: nextId(),
-          kind: 'voice',
-          voiceSeconds: secs,
-          incoming: false,
-          time: nowTime(),
-          status: 'sending',
-          rotate: nextTilt(),
-        };
-        setMessages((prev) => [...prev, voiceMsg]);
-        // After 400 ms set sent then simulateReply
-        setTimeout(() => {
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === voiceMsg.id ? { ...m, status: 'sent' as const } : m
-            )
-          );
-          simulateReply();
-        }, 400);
-      }
-      return 0;
-    });
-  }
-
-  // ── onPick (AttachmentSheet) ────────────────────────────────────────────────
-  function handlePick(kind: AttachmentKind) {
-    setAttachVisible(false);
-
-    let newMsg: ChatMessage;
-
-    if (kind === 'photo' || kind === 'camera') {
-      newMsg = {
-        id: nextId(),
-        kind: 'image',
-        imageUri: nextImageUri(),
-        incoming: false,
-        time: nowTime(),
-        status: 'sending',
-        rotate: nextTilt(),
-      };
-    } else if (kind === 'position') {
-      newMsg = {
-        id: nextId(),
-        kind: 'image',
-        imageUri: MAP_URI,
-        incoming: false,
-        time: nowTime(),
-        status: 'sending',
-        rotate: nextTilt(),
-      };
-    } else {
-      // document
-      newMsg = {
-        id: nextId(),
-        kind: 'text',
-        text: t('chatUi.documentSent'),
-        incoming: false,
-        time: nowTime(),
-        status: 'sending',
-        rotate: nextTilt(),
-      };
-    }
-
-    setMessages((prev) => [...prev, newMsg]);
-
-    setTimeout(() => {
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === newMsg.id ? { ...m, status: 'sent' as const } : m
-        )
-      );
-      simulateReply();
-    }, 400);
-  }
-
-  // ── Call / Video handlers ───────────────────────────────────────────────────
-  function handleCall() {
-    Alert.alert(t('chatUi.callAlertTitle'), t('chatUi.callAlertBody'));
-  }
-
-  function handleVideo() {
-    Alert.alert(t('chatUi.callAlertTitle'), t('chatUi.callAlertBody'));
-  }
+  // Photos / voice / calls belong to TASK-007 (session photo transfer) and are
+  // out of scope for text chat — keep the affordances but defer.
+  const comingSoon = () => Alert.alert(t('chatUi.callAlertTitle'), t('chatUi.callAlertBody'));
 
   return (
     <PaperBackground tone="paper">
@@ -305,18 +104,16 @@ export default function ChatScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={0}
       >
-        {/* Header with safe-area top padding */}
         <View style={{ paddingTop: insets.top }}>
           <ChatHeader
-            user={user}
+            user={headerUser}
             status={t('chatUi.headerStatus')}
             onBack={() => router.back()}
-            onCall={handleCall}
-            onVideo={handleVideo}
+            onCall={comingSoon}
+            onVideo={comingSoon}
           />
         </View>
 
-        {/* Messages */}
         <ScrollView
           ref={scrollRef}
           style={styles.flex}
@@ -324,51 +121,44 @@ export default function ChatScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {messages.map((msg) => (
-            <MessageBubble key={msg.id} message={msg} />
+          {items.map((item, i) => (
+            <View key={item.key}>
+              <MessageBubble message={toChatMessage(item, i)} />
+              {item.status === 'failed' && (
+                <Pressable onPress={() => retry(item.key)} style={styles.retry}>
+                  <Text style={[styles.retryText, { color: colors.stampRed }]}>
+                    échec — toucher pour renvoyer
+                  </Text>
+                </Pressable>
+              )}
+            </View>
           ))}
-          {typing && <TypingIndicator />}
-          {/* Bottom padding so last bubble isn't flush */}
           <View style={styles.scrollBottom} />
         </ScrollView>
 
-        {/* Quick replies */}
-        <QuickReplies onSend={sendText} />
+        <QuickReplies onSend={handleSend} />
 
-        {/* Composer */}
         <Composer
           value={input}
           onChangeText={setInput}
-          onSend={() => sendText(input)}
-          onAttach={() => setAttachVisible(true)}
-          onRecordStart={handleRecordStart}
-          onRecordStop={handleRecordStop}
-          recording={recording}
-          recordSeconds={recordSeconds}
+          onSend={() => handleSend(input)}
+          onAttach={comingSoon}
+          onRecordStart={comingSoon}
+          onRecordStop={comingSoon}
+          recording={false}
+          recordSeconds={0}
         />
 
-        {/* Bottom safe-area padding inside composer area */}
         <View style={{ height: insets.bottom }} />
       </KeyboardAvoidingView>
-
-      {/* Attachment sheet */}
-      <AttachmentSheet
-        visible={attachVisible}
-        onClose={() => setAttachVisible(false)}
-        onPick={handlePick}
-      />
     </PaperBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingVertical: 8,
-  },
-  scrollBottom: {
-    height: 8,
-  },
+  flex: { flex: 1 },
+  scrollContent: { paddingVertical: 8 },
+  scrollBottom: { height: 8 },
+  retry: { alignSelf: 'flex-end', paddingHorizontal: 18, paddingTop: 2 },
+  retryText: { fontFamily: fonts.hand, fontSize: 13 },
 });

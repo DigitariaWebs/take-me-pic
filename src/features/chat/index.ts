@@ -8,6 +8,9 @@ export { QuickReplies } from './components/QuickReplies';
 export { Composer } from './components/Composer';
 export { AttachmentSheet } from './components/AttachmentSheet';
 
+export { chatApi, type Message } from './api/chat-api';
+export { useConversation, type ChatItem } from './hooks/useConversation';
+
 export { fmtDuration } from './types';
 export type {
   ChatMessage,
