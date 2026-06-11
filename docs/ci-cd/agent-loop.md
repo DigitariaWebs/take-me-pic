@@ -11,7 +11,9 @@ across the board in dependency order, with a human gate on every PR.
 | `.claude/commands/build-task.md` | `/build-task TASK-XXX` — runs the full pipeline for one task and opens a PR. |
 | `.claude/commands/next-task.md` | `/next-task` — one supervised loop step: checks the last PR is settled, then builds the next buildable task. |
 | `scripts/seed-test-users.mjs` | Seeds Supabase fixtures (verified / unverified / banned / missing-profile) so Maestro gate states stop being manual. |
-| `.eas/workflows/e2e-test-{android,ios}.yml` | Run Maestro on every PR — the objective gate. |
+| `.github/workflows/quality-gates.yml` | Re-runs `npm run typecheck` on every PR. |
+
+**Gating:** grilling and a green **local** `maestro test` are **mandatory** inside `/build-task` (it halts if Maestro isn't installed or no device is booted). There is **no EAS Maestro gate** — the objective test gate is the local Maestro run + typecheck, plus human review on the PR.
 
 ## npm shortcuts
 
@@ -23,9 +25,9 @@ npm run seed:test    # seed Maestro test users (needs SUPABASE_SERVICE_ROLE_KEY)
 
 ## Running the loop
 
-1. `/next-task` — picks the next task whose blockers are all `Done`, runs `/build-task`, opens `task/TASK-XXX` → `dev`.
-2. The PR triggers EAS Maestro (iOS + Android). Review the diff + pass criteria.
-3. When CI is green and you approve, squash-merge.
+1. `/next-task` — picks the next task whose blockers are all `Done`, runs `/build-task` (mandatory grilling + local Maestro), opens `task/TASK-XXX` → `dev`.
+2. `/build-task` already ran typecheck + Maestro locally and pasted the results; the PR re-runs typecheck as a GitHub Action. Review the diff + pass criteria.
+3. When you approve, squash-merge.
 4. `/next-task` again. Repeat until `npm run board:next` prints `NONE`.
 
 The loop **never merges itself and never starts task N+1 while task N's PR is open** — that's the "supervised" part.

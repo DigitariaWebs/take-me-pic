@@ -3,7 +3,7 @@ description: Supervised-loop step — verify the last task's PR is green/merged,
 allowed-tools: Bash, Read, Edit, Write, Glob, Grep, Skill
 ---
 
-You are one **supervised iteration** of the agent-board loop. The rule: never start a new task while the previous one's PR is still open and unmerged. The PR + EAS Maestro run is the gate.
+You are one **supervised iteration** of the agent-board loop. The rule: never start a new task while the previous one's PR is still open and unmerged. The gate is a **green local Maestro run + human review** on the PR — there is no EAS gate.
 
 ## 1. Reconcile merged work → Done
 
@@ -18,6 +18,8 @@ List open PRs from this loop: `gh pr list --state open --search "head:task/" --j
 - If an open `task/TASK-XXX` PR exists, **stop** and report its CI status + review decision. Tell the user to merge/approve it (or fix red CI) before the loop advances. Do not build anything.
 - If a PR is green + approved but unmerged, offer to merge it (`gh pr merge --squash`) but wait for the user's go-ahead — do not merge unprompted.
 - If there are no open `task/` PRs, continue.
+
+**Fail closed:** the `--search "head:task/"` query is flaky and has returned an empty list on a network timeout. Never treat an errored or uncertain query as "no open PRs." If the query fails, or you are not certain it succeeded, re-check the most recent task PR directly (`gh pr view <n> --json state`) and **halt if you cannot positively confirm there is no open task PR.**
 
 ## 3. Pick the next task
 
