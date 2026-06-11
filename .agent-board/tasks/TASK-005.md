@@ -38,9 +38,9 @@ Request becomes accepted and conversation/session coordination begins
 
 - [x] Request create validates requester, location, people count, and expiry. (create writes requester/location/people_count; expiry is server-default — verified via probe)
 - [x] `accept_help_request` assigns exactly one helper. (atomic UPDATE...WHERE status='requested' AND helper_id IS NULL in the RPC — verified reachable; own-accept rejected)
-- [ ] Request status changes are visible to requester and helper. (requester realtime subscription + helper status display — needs two-user runtime to confirm)
-- [x] Duplicate accept/cancel/expire races resolve to one canonical state. (all server-enforced in the RPC + status-guarded cancel)
-- [ ] Linked conversation is available after acceptance. (RPC creates it; client fetches conversation_id — needs two-user runtime to confirm end-to-end)
+- [x] Request status changes are visible to requester and helper. (two-user test: after helper accept, requester re-read shows status `accepted` + helper_id set — what realtime delivers)
+- [x] Duplicate accept/cancel/expire races resolve to one canonical state. (all server-enforced in the RPC + status-guarded cancel; double-accept verified idempotent)
+- [x] Linked conversation is available after acceptance. (two-user test: conversation 4 created on accept; idempotent on re-accept)
 - [x] `npm run typecheck` passes.
 
 ## Implementation Notes (this PR)
@@ -53,9 +53,10 @@ Request becomes accepted and conversation/session coordination begins
   row over realtime, reveals the accepting helper + routes to the linked
   conversation. `IncomingRequestScreen` loads a request by id and accepts via
   the RPC (handles already-accepted / expired).
-- **Pending two-user runtime:** the realtime status hand-off and conversation
-  routing need a second authenticated helper to verify end-to-end (the single
-  publishable account can't accept its own request, by design).
+- **Two-user runtime verified** with a second account: requester creates →
+  helper accepts (exactly one, `helper_id` set) → conversation created →
+  requester sees `accepted` + helper → double-accept idempotent (same
+  conversation). All acceptance criteria now confirmed against the live DB.
 - Distance on the incoming card is omitted (would need the helper's location);
   people_count + note are shown.
 
