@@ -10,6 +10,5 @@ Open product and engineering questions to resolve before implementation locks.
    - Proposed baseline: presence updates are event-driven (toggle on/off, app background, permission revoke, current-location refresh tap).
    - Decision needed: TTL duration for `updated_at` filtering in `find_available_helpers`, and whether to enforce a one-time foreground refresh when presence is on and data is older than the TTL window.
 
-2. `find_available_helpers` returns profile rows only — no per-helper location or distance.
-   - Impact: the map currently places real helper identities at cosmetic scatter positions and shows approximate distances.
-   - Decision needed: extend the RPC to return `location` (or `distance_m`) so pins sit at real coordinates and distances are accurate. Confirm we expose coarse/snapped location, not precise GPS, for privacy.
+2. ~~`find_available_helpers` returns no per-helper location~~ **(resolved — migration 0005 returns lat/lng + distance_m; pins now sit at real positions).**
+   - Open privacy follow-up: 0005 returns the exact presence point. Decide whether to expose **coarse/snapped** location instead of precise GPS for nearby helpers.

@@ -76,10 +76,11 @@ Requester sees trusted face-pins with karma/profile signals
 - Presence data layer (`src/features/presence`) verified against the live DB with
   the publishable key: presence write (PostGIS geography as EWKT), the RPC
   lookup, and go-offline all succeed.
-- **RPC coordinate gap:** `find_available_helpers` returns profile rows without
-  per-helper location/distance, so map pins use real helper identity with a
-  cosmetic scatter position/distance. Returning location + distance_m from the
-  RPC is a backend follow-up (added to `docs/next-meeting-questions.md`).
+- **Real coordinates (resolved):** migration `0005` extends
+  `find_available_helpers` to return each helper's `lat`/`lng` (distance_m was
+  already real), so pins now sit at true positions. The current user's own
+  marker shows his avatar at his GPS position, highlighted gold. Applied +
+  verified against the live DB.
 - Language filter is not applied to live helpers (profile languages are names,
   the filter chips are flag codes) — rating/verified/sort/distance are applied.
 - Runtime device verification (permission flow, toggle write/offline, refresh)
