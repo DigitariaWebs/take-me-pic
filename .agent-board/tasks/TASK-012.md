@@ -28,6 +28,10 @@ Move the community feed from mock data to a small Supabase-backed slice after Ph
 ## Technical Notes
 
 - Source docs: `docs/specs/010-community-feed/spec.md`, `docs/features/phase_2/community_feed_flow.md`.
+- Backend sync: `docs/WEB-BACKEND-SYNC.md` §2 — posts/comments have
+  `hidden_at`/`hidden_by` and RLS already excludes hidden content for
+  everyone but the author; authors still see their own hidden content
+  (optionally badge it). Never call the `admin_set_*_visibility` RPCs.
 
 ## Dependencies
 

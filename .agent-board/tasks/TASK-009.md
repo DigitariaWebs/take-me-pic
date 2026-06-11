@@ -52,6 +52,8 @@ User receives push or in-app fallback
 - Source docs: `docs/specs/009-notifications-push/spec.md`, `docs/features/cross_cutting/notifications_flow.md`.
 - Supabase does not provide native push; use Expo/APNs/FCM pipeline.
 - Avoid sending precise location in notification payloads.
+- Backend sync: `docs/WEB-BACKEND-SYNC.md` — the web admin wires
+  `notifications` reads/templates in its TASK-008; keep rows client-agnostic.
 
 ## Dependencies
 

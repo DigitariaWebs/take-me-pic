@@ -72,3 +72,9 @@ Then do TASK-002 and TASK-003 before moving into map/request flows.
 - Preserve the approved UI; wire behavior through feature APIs/hooks.
 - Do not expose service-role or secret keys in client code.
 - Do not use user-editable metadata for authorization.
+- Read `docs/WEB-BACKEND-SYNC.md` before wiring any Supabase-backed feature:
+  the web/admin repo shares this database and has shipped schema, RLS, and
+  staff-RPC changes that affect mobile behavior (spots pre-moderation,
+  content soft-hide, report targets, ban semantics). Whoever changes the
+  shared schema updates that file AND the web repo's
+  `docs/MOBILE-SYNC-NOTES.md`.

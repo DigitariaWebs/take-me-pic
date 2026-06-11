@@ -64,6 +64,9 @@ Access is denied outside session participants
 - Source docs: `docs/specs/007-session-photo-transfer/spec.md`, `docs/features/phase_1/session_photo_transfer_flow.md`.
 - Use signed URLs or public access only if policy explicitly permits it.
 - Do not store private photo URLs in unrestricted tables.
+- Backend sync: `docs/WEB-BACKEND-SYNC.md` §6 — session photos stay
+  participant-only by design (web ADR-0004); do not broaden policies for
+  staff access.
 
 ## Dependencies
 
