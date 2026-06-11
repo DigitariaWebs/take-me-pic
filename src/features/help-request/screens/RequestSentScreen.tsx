@@ -1,18 +1,19 @@
 import { useMemo } from 'react';
 import { Animated, Image, Pressable, StyleSheet, Text, View } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useEffect, useRef, useState } from 'react';
-import { X } from 'lucide-react-native';
+import { useEffect, useRef } from 'react';
+import { X, Camera } from 'lucide-react-native';
 import { PaperBackground } from '@/shared/ui/PaperBackground';
 import { NavBar, HomeIndicator } from '@/shared/ui/iOSChrome';
 import { Stamp } from '@/shared/ui/Stamp';
 import { Button } from '@/shared/ui/Button';
 import { fonts, type ThemeColors } from '@/shared/constants/tokens';
 import { useThemeColors } from '@/shared/providers/ThemeProvider';
-import { findUser, leo } from '@/shared/data/mock';
+import { useAuth } from '@/shared/providers';
+import { useProfile } from '@/features/profile';
+import { useBroadcastRequest } from '../hooks/useBroadcastRequest';
 import { t } from '@/shared/lib/i18n';
-import { useRole } from '@/shared/providers/RoleProvider';
 
 // ─── styles factory ───────────────────────────────────────────────────────────
 const makeStyles = (colors: ThemeColors) =>
@@ -70,62 +71,59 @@ const makeStyles = (colors: ThemeColors) =>
     cta: { position: 'absolute', left: 22, right: 22 },
   });
 
-/** 07 · Pli envoyé — auto-accepts after ~5 s, then continues to the chat. */
+/** Pli envoyé — broadcasts a help request and waits for a nearby helper to accept. */
 export default function RequestSent() {
   const colors = useThemeColors();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { id } = useLocalSearchParams<{ id?: string }>();
-  const user = id ? findUser(id) : leo;
-  const { isHelper } = useRole();
+  const { user } = useAuth();
+  const { state, request, conversationId, cancel } = useBroadcastRequest(user?.id);
+
+  const accepted = state === 'accepted';
+  const cancelled = state === 'cancelled';
+  const { data: helper } = useProfile(accepted ? request?.helper_id ?? '' : '');
+  const helperName = helper?.first_name ?? '';
+  const helperAvatar = helper?.avatar_url ?? null;
 
   const pulse = useRef(new Animated.Value(0)).current;
   const acceptAnim = useRef(new Animated.Value(0)).current;
-  const [cancelled, setCancelled] = useState(false);
-  const [accepted, setAccepted] = useState(false);
-  const done = useRef(false); // guards against accept-after-cancel
 
   useEffect(() => {
     const loop = Animated.loop(
-      Animated.timing(pulse, { toValue: 1, duration: 2400, useNativeDriver: true })
+      Animated.timing(pulse, { toValue: 1, duration: 2400, useNativeDriver: true }),
     );
     loop.start();
+    return () => loop.stop();
+  }, [pulse]);
 
-    let navTimer: ReturnType<typeof setTimeout> | undefined;
-    // Simulate the recipient accepting after ~5 s.
-    const acceptTimer = setTimeout(() => {
-      if (done.current) return;
-      done.current = true;
-      loop.stop();
-      setAccepted(true);
+  useEffect(() => {
+    if (accepted) {
       Animated.spring(acceptAnim, { toValue: 1, friction: 5, tension: 130, useNativeDriver: true }).start();
-      // then continue to the chat
-      navTimer = setTimeout(() => router.replace(`/chat/${user.id}`), 1500);
-    }, 5000);
+    }
+  }, [accepted, acceptAnim]);
 
-    return () => {
-      loop.stop();
-      clearTimeout(acceptTimer);
-      clearTimeout(navTimer);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Once accepted and the conversation is linked, continue to the chat.
+  useEffect(() => {
+    if (accepted && conversationId != null) {
+      const tmr = setTimeout(() => router.replace(`/chat/${conversationId}`), 1500);
+      return () => clearTimeout(tmr);
+    }
+  }, [accepted, conversationId, router]);
+
+  useEffect(() => {
+    if (cancelled) {
+      const tmr = setTimeout(() => router.replace('/(tabs)'), 900);
+      return () => clearTimeout(tmr);
+    }
+  }, [cancelled, router]);
 
   const scale = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.95, 1.15] });
   const opacity = pulse.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0.7, 0, 0] });
-
   const stampScale = acceptAnim.interpolate({ inputRange: [0, 1], outputRange: [2, 1] });
   const stampRotate = acceptAnim.interpolate({ inputRange: [0, 1], outputRange: ['-30deg', '-10deg'] });
   const stampOpacity = acceptAnim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, 0.95, 0.92] });
-
-  function handleCancel() {
-    if (done.current) return;
-    done.current = true;
-    setCancelled(true);
-    setTimeout(() => router.replace('/(tabs)'), 900);
-  }
 
   return (
     <PaperBackground tone="paper2">
@@ -136,37 +134,41 @@ export default function RequestSent() {
               <X size={20} color={colors.ink} />
             </Pressable>
           }
-          title={<Text style={styles.pliNo}>{t('requestSent.pliNo', { n: '042' })}</Text>}
+          title={<Text style={styles.pliNo}>{t('requestSent.pliNo', { n: request ? String(request.id) : '—' })}</Text>}
           right={null}
         />
       </View>
 
       <View style={styles.center}>
-        {/* Postcard */}
+        {/* Postcard — addressed to "a nearby photographer", revealing the helper on accept */}
         <View style={styles.postcard}>
           <View style={styles.cornerStamp}>
             <Text style={styles.stampInner}>{`TMP\n★\n0,02€`}</Text>
           </View>
           <View style={{ paddingRight: 90 }}>
             <Text style={styles.toLabel}>{t('flow.postcardTo')}</Text>
-            <Text style={styles.toAddr}>{`${user.firstName} ${user.lastName}\n${user.city}`}</Text>
+            <Text style={styles.toAddr}>{accepted && helperName ? helperName : 'un photographe\nprès de toi'}</Text>
           </View>
           <View style={styles.divider} />
           <Text style={styles.handwriting}>
-            {isHelper
-              ? t('flow.postcardHelper', { name: user.firstName })
-              : t('flow.postcardSeeker', { name: user.firstName })}
+            {accepted && helperName ? t('flow.accepted', { name: helperName }) : t('requestSent.sub')}
           </Text>
           <View style={{ position: 'absolute', top: '50%', left: '50%', marginLeft: -60, marginTop: -60 }}>
-            <Stamp size={120} fontSize={11} color="red" rotate={-18}>{t('requestSent.stamp') + '\n★\n15·VI·26\n09:41'}</Stamp>
+            <Stamp size={120} fontSize={11} color={accepted ? 'green' : 'red'} rotate={-18}>{t('requestSent.stamp') + '\n★'}</Stamp>
           </View>
         </View>
 
-        {/* Avatar with pulse + accept stamp */}
+        {/* Search indicator → helper avatar with pulse + accept stamp */}
         <View style={styles.avatarWrap}>
           {!accepted && <Animated.View style={[styles.pulse, { transform: [{ scale }], opacity }]} />}
           <View style={[styles.avatarBorder, accepted && { borderColor: colors.stampGreen }]} />
-          <Image source={{ uri: user.avatar }} style={styles.avatar} />
+          {accepted && helperAvatar ? (
+            <Image source={{ uri: helperAvatar }} style={styles.avatar} />
+          ) : (
+            <View style={[styles.avatar, { backgroundColor: colors.paper2, alignItems: 'center', justifyContent: 'center' }]}>
+              <Camera size={44} color={colors.inkFaded} />
+            </View>
+          )}
           {accepted && (
             <Animated.View
               pointerEvents="none"
@@ -181,23 +183,19 @@ export default function RequestSent() {
           <Text style={styles.cancelledMsg}>{t('flow.cancelled')}</Text>
         ) : accepted ? (
           <>
-            <Text style={[styles.waiting, { color: colors.stampGreen }]}>{t('flow.accepted', { name: user.firstName })}</Text>
+            <Text style={[styles.waiting, { color: colors.stampGreen }]}>{t('flow.accepted', { name: helperName })}</Text>
             <Text style={styles.help}>{t('flow.goMeet')}</Text>
           </>
         ) : (
           <>
-            <Text style={styles.waiting}>
-              {isHelper
-                ? t('flow.waitingHelper', { name: user.firstName })
-                : t('flow.waitingReply', { name: user.firstName })}
-            </Text>
+            <Text style={styles.waiting}>On cherche un photographe près de toi…</Text>
             <Text style={styles.help}>{t('requestSent.sub')}</Text>
           </>
         )}
       </View>
 
       <View style={[styles.cta, { bottom: insets.bottom + 26 }]}>
-        <Button full variant="ghost" onPress={handleCancel} disabled={cancelled || accepted}>
+        <Button full variant="ghost" onPress={() => void cancel()} disabled={cancelled || accepted}>
           {cancelled ? t('flow.cancelled') : t('requestSent.cancel')}
         </Button>
       </View>

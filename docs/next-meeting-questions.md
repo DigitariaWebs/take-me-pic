@@ -6,14 +6,18 @@ Open product and engineering questions to resolve before implementation locks.
 
 ## Questions
 
-1. Without heartbeat, what stale-presence policy do we want for MVP?
+1. Help request model: broadcast to all nearby helpers, or targeted to a picked helper?
+   - **MVP decision (taken): broadcast.** The schema + `accept_help_request` are broadcast — a request has no target helper; any eligible non-banned non-owner can accept, first-wins. The mobile UI is being wired to match (`RequestSentScreen` shows "waiting for a nearby helper" and reveals the accepter on accept).
+   - Decision needed from the meeting: confirm broadcast as the product model, or invest in **targeted** (add `target_helper_id` + restrict `accept_help_request`) post-MVP. Targeted changes matching, notifications, and the request UX.
+
+2. Without heartbeat, what stale-presence policy do we want for MVP?
    - Proposed baseline: presence updates are event-driven (toggle on/off, app background, permission revoke, current-location refresh tap).
    - Decision needed: TTL duration for `updated_at` filtering in `find_available_helpers`, and whether to enforce a one-time foreground refresh when presence is on and data is older than the TTL window.
 
-2. ~~`find_available_helpers` returns no per-helper location~~ **(resolved — migration 0005 returns lat/lng + distance_m; pins now sit at real positions).**
+3. ~~`find_available_helpers` returns no per-helper location~~ **(resolved — migration 0005 returns lat/lng + distance_m; pins now sit at real positions).**
    - Open privacy follow-up: 0005 returns the exact presence point. Decide whether to expose **coarse/snapped** location instead of precise GPS for nearby helpers.
 
-3. Should the admin panel display or fetch users' current location?
+4. Should the admin panel display or fetch users' current location?
    - Web-side recommended answer (compliance-first): **not for MVP, and never as raw live presence.**
      - Today the admin panel reads **no coordinates at all** — the PostGIS columns are deliberately not selected or decoded (web TASK-006 hardening note, ADR-0004 boundary). `presence` is written by mobile but consumed only by `find_available_helpers` matching.
      - Purpose limitation: users share presence **to be matched with nearby helpers**. Repurposing it as back-office live tracking is a different processing purpose and would need its own justification, disclosure in the privacy policy, and arguably its own consent — the riskiest interpretation under GDPR for an EU-facing product.

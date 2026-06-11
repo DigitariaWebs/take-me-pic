@@ -1,20 +1,19 @@
 import { useMemo } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useEffect, useState } from 'react';
 import { Camera } from 'lucide-react-native';
 import { Polaroid } from '@/shared/ui/Polaroid';
 import { Stamp } from '@/shared/ui/Stamp';
-import { Flag } from '@/shared/ui/Flag';
 import { Button } from '@/shared/ui/Button';
 import { HomeIndicator } from '@/shared/ui/iOSChrome';
 import { fonts, type ThemeColors } from '@/shared/constants/tokens';
 import { useThemeColors } from '@/shared/providers/ThemeProvider';
-import { me } from '@/shared/data/mock';
+import { useProfile } from '@/features/profile';
+import { helpRequestApi, type HelpRequest } from '../api/help-request-api';
 import { t } from '@/shared/lib/i18n';
-import { useRole } from '@/shared/providers/RoleProvider';
 
 // ─── styles factory ───────────────────────────────────────────────────────────
 const makeStyles = (colors: ThemeColors) =>
@@ -54,35 +53,65 @@ const makeStyles = (colors: ThemeColors) =>
     swipe: { position: 'absolute', left: 0, right: 0, textAlign: 'center', color: 'rgba(253,249,237,0.65)', fontFamily: fonts.hand, fontSize: 18 },
   });
 
-/** 08 · Un mot sur le pas-de-porte. */
+/** Incoming help request — a helper views an open request and accepts it. */
 export default function Incoming() {
   const colors = useThemeColors();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { isHelper } = useRole();
+  const { id } = useLocalSearchParams<{ id?: string }>();
+  const requestId = id ? Number(id) : null;
 
-  // Countdown from 4:00 = 240 seconds
-  const [secondsLeft, setSecondsLeft] = useState(240);
+  const [request, setRequest] = useState<HelpRequest | null>(null);
+  const [secondsLeft, setSecondsLeft] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
+  const { data: requester } = useProfile(request?.requester_id ?? '');
+  const requesterName = requester?.first_name ?? '…';
+  const requesterAvatar = requester?.avatar_url ?? null;
+
+  // Load the request.
   useEffect(() => {
-    if (secondsLeft <= 0) return;
-    const id = setInterval(() => {
-      setSecondsLeft((s) => {
-        if (s <= 1) {
-          clearInterval(id);
-          return 0;
-        }
-        return s - 1;
-      });
-    }, 1000);
-    return () => clearInterval(id);
-  }, []);
+    if (requestId == null) return;
+    let active = true;
+    void helpRequestApi.getById(requestId).then((r) => {
+      if (active) setRequest(r);
+    });
+    return () => {
+      active = false;
+    };
+  }, [requestId]);
+
+  // Countdown to the server-set expiry.
+  useEffect(() => {
+    if (!request?.expires_at) return;
+    const tick = () =>
+      setSecondsLeft(Math.max(0, Math.floor((new Date(request.expires_at).getTime() - Date.now()) / 1000)));
+    tick();
+    const timer = setInterval(tick, 1000);
+    return () => clearInterval(timer);
+  }, [request?.expires_at]);
 
   const mins = Math.floor(secondsLeft / 60);
   const secs = secondsLeft % 60;
   const countdownLabel = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  const expired = request != null && secondsLeft <= 0;
+  const open = request?.status === 'requested' && !expired;
+
+  async function accept() {
+    if (requestId == null || busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await helpRequestApi.accept(requestId);
+      router.replace(`/chat/${res.conversation_id}`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Échec de l'acceptation");
+      setBusy(false);
+    }
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: '#000' }}>
@@ -93,8 +122,8 @@ export default function Incoming() {
       />
 
       <View style={{ paddingTop: insets.top + 22, paddingHorizontal: 22, alignItems: 'center' }}>
-        <Text style={styles.time}>9:41</Text>
-        <Text style={styles.date}>samedi 15 juin</Text>
+        <Text style={styles.time}>{countdownLabel}</Text>
+        <Text style={styles.date}>{t('flow.brandInstant')}</Text>
       </View>
 
       <View style={[styles.note, { marginTop: 40 }]}>
@@ -104,25 +133,28 @@ export default function Incoming() {
             <Text style={styles.brandLetter}>T</Text>
           </View>
           <Text style={styles.brandLabel}>{t('flow.brandInstant')}</Text>
-          {/* Ticking countdown */}
           <View style={styles.countdownBadge}>
             <Text style={styles.countdownText}>{countdownLabel}</Text>
           </View>
         </View>
         <View style={{ flexDirection: 'row', gap: 14, alignItems: 'flex-start' }}>
-          <Polaroid width={64} height={60} dark source={{ uri: me.avatar }} noCaption rotate={-4} />
+          <Polaroid
+            width={64}
+            height={60}
+            dark
+            source={{ uri: requesterAvatar ?? 'https://i.pravatar.cc/300?img=12' }}
+            noCaption
+            rotate={-4}
+          />
           <View style={{ flex: 1 }}>
-            <Text style={styles.title}>
-              {isHelper
-                ? t('flow.incomingHelper', { name: me.firstName })
-                : t('flow.incomingSeeker', { name: me.firstName })}
+            <Text style={styles.title}>{t('flow.incomingSeeker', { name: requesterName })}</Text>
+            <Text style={styles.meta}>
+              {request ? `${request.people_count} personne(s)${request.note ? ` · ${request.note}` : ''}` : '…'}
             </Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', marginTop: 6 }}>
-              <Text style={styles.meta}>à 80 m · place des Vosges · 3 personnes · parle </Text>
-              <Flag size={13}>🇫🇷</Flag>
-              <Text style={styles.meta}> </Text>
-              <Flag size={13}>🇬🇧</Flag>
-            </View>
+            {error ? <Text style={[styles.meta, { color: colors.stampRed }]}>{error}</Text> : null}
+            {!open && request ? (
+              <Text style={[styles.meta, { color: colors.stampRed }]}>{expired ? 'Demande expirée' : 'Demande déjà acceptée'}</Text>
+            ) : null}
           </View>
         </View>
         <View style={styles.actionRow}>
@@ -137,9 +169,10 @@ export default function Incoming() {
               size="sm"
               full
               icon={<Camera size={14} color={colors.ink} />}
-              onPress={() => router.replace('/chat/me')}
+              onPress={() => void accept()}
+              disabled={!open || busy}
             >
-              {isHelper ? t('flow.acceptHelper') : t('flow.acceptSeeker')}
+              {t('flow.acceptSeeker')}
             </Button>
           </View>
         </View>

@@ -36,12 +36,28 @@ Request becomes accepted and conversation/session coordination begins
 
 ## Acceptance Criteria
 
-- [ ] Request create validates requester, location, people count, and expiry.
-- [ ] `accept_help_request` assigns exactly one helper.
-- [ ] Request status changes are visible to requester and helper.
-- [ ] Duplicate accept/cancel/expire races resolve to one canonical state.
-- [ ] Linked conversation is available after acceptance.
-- [ ] `npm run typecheck` passes.
+- [x] Request create validates requester, location, people count, and expiry. (create writes requester/location/people_count; expiry is server-default — verified via probe)
+- [x] `accept_help_request` assigns exactly one helper. (atomic UPDATE...WHERE status='requested' AND helper_id IS NULL in the RPC — verified reachable; own-accept rejected)
+- [ ] Request status changes are visible to requester and helper. (requester realtime subscription + helper status display — needs two-user runtime to confirm)
+- [x] Duplicate accept/cancel/expire races resolve to one canonical state. (all server-enforced in the RPC + status-guarded cancel)
+- [ ] Linked conversation is available after acceptance. (RPC creates it; client fetches conversation_id — needs two-user runtime to confirm end-to-end)
+- [x] `npm run typecheck` passes.
+
+## Implementation Notes (this PR)
+
+- `helpRequestApi` verified against the live DB (publishable key): create
+  (status `requested`, `expires_at` server-default), own-accept correctly
+  rejected, cancel (status-guarded) all behave correctly.
+- `RequestSentScreen` rewired to the broadcast model: creates one request from
+  the user's GPS (falls back to le Marais if location denied), subscribes to its
+  row over realtime, reveals the accepting helper + routes to the linked
+  conversation. `IncomingRequestScreen` loads a request by id and accepts via
+  the RPC (handles already-accepted / expired).
+- **Pending two-user runtime:** the realtime status hand-off and conversation
+  routing need a second authenticated helper to verify end-to-end (the single
+  publishable account can't accept its own request, by design).
+- Distance on the incoming card is omitted (would need the helper's location);
+  people_count + note are shown.
 
 ## Grilling Decisions (MVP)
 

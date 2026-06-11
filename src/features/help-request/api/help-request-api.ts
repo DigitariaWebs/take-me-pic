@@ -69,4 +69,16 @@ export const helpRequestApi = {
     if (error) throw error;
     return data;
   },
+
+  // The conversation the RPC linked to this request (for the requester, who
+  // learns of acceptance via realtime rather than the RPC return).
+  async getConversationId(requestId: number): Promise<number | null> {
+    const { data, error } = await supabase
+      .from('conversations')
+      .select('id')
+      .eq('help_request_id', requestId)
+      .maybeSingle();
+    if (error) throw error;
+    return (data as { id: number } | null)?.id ?? null;
+  },
 };
