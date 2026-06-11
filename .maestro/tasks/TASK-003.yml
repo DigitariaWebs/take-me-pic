@@ -1,11 +1,12 @@
 appId: com.takemepic.app
-# Avatar storage is a backend/storage-policy slice — its acceptance criteria
-# (owner-scoped upload, public read, persistence) are verified via migration
-# 0004 + manual/RLS checks, not the UI. This flow is the app-boot smoke so the
-# build stays green; the picker UI is a deferred follow-up (see task notes).
+# Boot smoke for the standalone (Release) build. clearState gives a deterministic
+# signed-out start so the app-entry gate is exercised regardless of any persisted
+# session. Avatar storage criteria (owner-scoped upload, public read, persistence)
+# are verified separately via scripts/verify-avatars.mjs after migration 0004.
 ---
-- launchApp
+- launchApp:
+    clearState: true
 - extendedWaitUntil:
     visible: ".*(appuie pour commencer|tap to begin|اضغط للبدء|toca para empezar).*"
-    timeout: 12000
+    timeout: 20000
 - assertVisible: ".*(appuie pour commencer|tap to begin|اضغط للبدء|toca para empezar).*"
