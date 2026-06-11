@@ -44,4 +44,15 @@ export const chatApi = {
     if (error) throw error;
     return (data as { user_id: string } | null)?.user_id ?? null;
   },
+
+  // The help request this conversation belongs to (to open the session gallery).
+  async getHelpRequestId(conversationId: number): Promise<number | null> {
+    const { data, error } = await supabase
+      .from('conversations')
+      .select('help_request_id')
+      .eq('id', conversationId)
+      .maybeSingle();
+    if (error) throw error;
+    return (data as { help_request_id: number | null } | null)?.help_request_id ?? null;
+  },
 };
