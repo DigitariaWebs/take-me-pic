@@ -316,7 +316,7 @@ export default function MoiTab() {
 
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { role, setRole } = useRole();
+  const { role } = useRole();
   const [activeTab, setActiveTab] = useState<ProfileTab>('historique');
 
   // ── Real current-user profile (TASK-003 AC4) ─────────────────────
@@ -403,25 +403,8 @@ export default function MoiTab() {
         />
       </View>
 
-      {/* ── Role segmented control ──────────────────────────────────── */}
-      <View style={styles.roleSwitchRow}>
-        <Pressable
-          style={[styles.roleChip, role === 'seeker' && styles.roleChipActive]}
-          onPress={() => setRole('seeker')}
-        >
-          <Text style={[styles.roleChipText, role === 'seeker' && styles.roleChipTextActive]}>
-            {t('setx.roleSeekerLabel')}
-          </Text>
-        </Pressable>
-        <Pressable
-          style={[styles.roleChip, role === 'helper' && styles.roleChipActive]}
-          onPress={() => setRole('helper')}
-        >
-          <Text style={[styles.roleChipText, role === 'helper' && styles.roleChipTextActive]}>
-            {t('setx.roleHelperLabel')}
-          </Text>
-        </Pressable>
-      </View>
+      {/* Role buttons (je veux une photo / je veux aider) removed per TASK-004 —
+          role is controlled from the map screen, not the profile. */}
 
       <ScrollView contentContainerStyle={{ paddingBottom: 130 }}>
         <View style={{ paddingHorizontal: 22, flexDirection: 'row', gap: 16, alignItems: 'flex-start', position: 'relative' }}>
