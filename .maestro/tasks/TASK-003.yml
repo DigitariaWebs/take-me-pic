@@ -1,0 +1,12 @@
+appId: com.takemepic.app
+# Boot smoke for the standalone (Release) build. clearState gives a deterministic
+# signed-out start so the app-entry gate is exercised regardless of any persisted
+# session. Avatar storage criteria (owner-scoped upload, public read, persistence)
+# are verified separately via scripts/verify-avatars.mjs after migration 0004.
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: ".*(appuie pour commencer|tap to begin|اضغط للبدء|toca para empezar).*"
+    timeout: 20000
+- assertVisible: ".*(appuie pour commencer|tap to begin|اضغط للبدء|toca para empezar).*"

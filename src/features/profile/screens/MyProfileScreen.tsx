@@ -27,6 +27,9 @@ import { useThemeColors } from '@/shared/providers/ThemeProvider';
 import { me, galleryPhotos } from '@/shared/data/mock';
 import { t } from '@/shared/lib/i18n';
 import { useRole } from '@/shared/providers/RoleProvider';
+import { useAuth } from '@/shared/providers';
+import { useProfile } from '../hooks/useProfile';
+import { useUpdateProfile } from '../hooks/useUpdateProfile';
 
 type ProfileTab = 'historique' | 'photos' | 'badges';
 
@@ -316,22 +319,46 @@ export default function MoiTab() {
   const { role, setRole } = useRole();
   const [activeTab, setActiveTab] = useState<ProfileTab>('historique');
 
-  // ── Editable profile state ───────────────────────────────────────
-  const [displayName, setDisplayName] = useState(`${me.firstName} ${me.lastName.charAt(0)}.`);
-  const [displayBio, setDisplayBio] = useState(me.bio);
+  // ── Real current-user profile (TASK-003 AC4) ─────────────────────
+  const { user } = useAuth();
+  const { data: profile } = useProfile(user?.id ?? '');
+  const updateProfile = useUpdateProfile();
+
+  // Identity + stats come from the trusted profile row; the history / photos /
+  // badges tabs stay mock until their own tasks land. Mock `me` is only a
+  // fallback while the profile query is in flight.
+  const firstName = profile?.first_name ?? me.firstName;
+  const lastInitial = (profile?.last_name ?? '').charAt(0);
+  const displayName = lastInitial ? `${firstName} ${lastInitial}.` : firstName;
+  const bio = profile?.bio ?? '';
+  const avatar = profile?.avatar_url ?? me.avatar;
+  const city = profile?.city ?? me.city;
+  const languages = profile?.languages?.length ? profile.languages : me.languages;
+  const username = profile?.username ?? me.username;
+  const age = profile?.age ?? me.age;
+  const profileId = profile?.id ?? me.id;
+  const memberSince = profile?.member_since ?? me.memberSince;
+  const karma = profile?.karma ?? 0;
+  const rating = profile?.rating ?? me.rating;
+  const photosCount = profile?.photos_count ?? 0;
+
+  // ── Edit profile modal (persists to Supabase) ────────────────────
   const [editModalVisible, setEditModalVisible] = useState(false);
-  const [draftName, setDraftName] = useState(displayName);
-  const [draftBio, setDraftBio] = useState(displayBio);
+  const [draftName, setDraftName] = useState('');
+  const [draftBio, setDraftBio] = useState('');
 
   function openEditModal() {
-    setDraftName(displayName);
-    setDraftBio(displayBio);
+    setDraftName(firstName);
+    setDraftBio(bio);
     setEditModalVisible(true);
   }
 
   function saveEdits() {
-    if (draftName.trim()) setDisplayName(draftName.trim());
-    setDisplayBio(draftBio);
+    if (!user?.id) return;
+    updateProfile.mutate({
+      id: user.id,
+      profile: { first_name: draftName.trim() || firstName, bio: draftBio },
+    });
     setEditModalVisible(false);
   }
 
@@ -344,7 +371,7 @@ export default function MoiTab() {
 
   useEffect(() => {
     Animated.timing(karmaAnim, {
-      toValue: me.karma,
+      toValue: karma,
       duration: 1400,
       useNativeDriver: false,
     }).start();
@@ -354,7 +381,7 @@ export default function MoiTab() {
     });
 
     return () => karmaAnim.removeListener(listener);
-  }, []);
+  }, [karma]);
 
   const tabs: ProfileTab[] = ['historique', 'photos', 'badges'];
 
@@ -399,7 +426,7 @@ export default function MoiTab() {
       <ScrollView contentContainerStyle={{ paddingBottom: 130 }}>
         <View style={{ paddingHorizontal: 22, flexDirection: 'row', gap: 16, alignItems: 'flex-start', position: 'relative' }}>
           <View style={{ transform: [{ rotate: '-5deg' }] }}>
-            <Polaroid width={110} height={110} captionSize={14} caption="moi, juin 2026" source={{ uri: me.avatar }}>
+            <Polaroid width={110} height={110} captionSize={14} caption="moi, juin 2026" source={{ uri: avatar }}>
               <Tape color="red" rotate={-3} width={56} style={{ position: 'absolute', top: -10, left: 30 }} />
             </Polaroid>
           </View>
@@ -410,12 +437,12 @@ export default function MoiTab() {
                 <Pencil size={14} color={colors.ink} />
               </Pressable>
             </View>
-            <Text style={styles.metaLine}>{me.city} · depuis {me.memberSince}</Text>
-            {displayBio ? (
-              <Text style={styles.bioText}>{displayBio}</Text>
+            <Text style={styles.metaLine}>{city} · depuis {memberSince}</Text>
+            {bio ? (
+              <Text style={styles.bioText}>{bio}</Text>
             ) : null}
             <View style={styles.chipRow}>
-              {me.languages.map((l) => (
+              {languages.map((l) => (
                 <Chip key={l} leading={<Flag size={15}>{l}</Flag>} size="sm">
                   {' '}
                 </Chip>
@@ -439,7 +466,7 @@ export default function MoiTab() {
               <Text style={styles.karmaWeek}>{t('myProfile.weekly', { n: 15 })}</Text>
             </View>
             <View style={{ alignItems: 'flex-end' }}>
-              <Text style={styles.karmaPhotoCount}>{me.photosCount} / {me.rating}★</Text>
+              <Text style={styles.karmaPhotoCount}>{photosCount} / {rating}★</Text>
               <Text style={styles.karmaSub}>
                 {role === 'helper' ? t('setx.statsGiven') : t('setx.statsReceived')}
               </Text>
@@ -617,15 +644,15 @@ export default function MoiTab() {
                     width={72}
                     height={72}
                     noCaption
-                    source={{ uri: me.avatar }}
+                    source={{ uri: avatar }}
                   />
                 </View>
                 <View style={{ flex: 1, paddingLeft: 14 }}>
                   <Text style={styles.passportName}>{displayName}</Text>
-                  <Text style={styles.passportMeta}>{me.city}</Text>
-                  <Text style={styles.passportMeta}>Membre depuis {me.memberSince}</Text>
+                  <Text style={styles.passportMeta}>{city}</Text>
+                  <Text style={styles.passportMeta}>Membre depuis {memberSince}</Text>
                   <View style={{ flexDirection: 'row', gap: 4, marginTop: 6 }}>
-                    {me.languages.map((l) => (
+                    {languages.map((l) => (
                       <Flag key={l} size={16}>{l}</Flag>
                     ))}
                   </View>
@@ -635,7 +662,7 @@ export default function MoiTab() {
               {/* QR placeholder */}
               <View style={styles.qrBlock}>
                 <View style={styles.qrFrame}>
-                  <QRPlaceholder size={180} seed={me.id + me.username} />
+                  <QRPlaceholder size={180} seed={profileId + username} />
                 </View>
                 <Text style={styles.qrCaption}>{t('setx.passportScanCaption')}</Text>
               </View>
@@ -643,15 +670,15 @@ export default function MoiTab() {
               {/* Gold stamp overlay */}
               <View style={styles.passportStampOverlay}>
                 <Stamp color="gold" size={72} fontSize={7} rotate={12}>
-                  {`KARMA\n${me.karma}\n✦`}
+                  {`KARMA\n${karma}\n✦`}
                 </Stamp>
               </View>
             </View>
 
             {/* Machine-readable footer */}
             <View style={styles.passportFooter}>
-              <Text style={styles.passportMRZ}>{`${me.username.toUpperCase().replace('@', '').replace('.', '<')}<<<<<<<<<<<`}</Text>
-              <Text style={styles.passportMRZ}>{`${String(me.karma).padStart(7, '0')}FR${String(me.age).padStart(2, '0')}<<<<<<0`}</Text>
+              <Text style={styles.passportMRZ}>{`${username.toUpperCase().replace('@', '').replace('.', '<')}<<<<<<<<<<<`}</Text>
+              <Text style={styles.passportMRZ}>{`${String(karma).padStart(7, '0')}FR${String(age).padStart(2, '0')}<<<<<<0`}</Text>
             </View>
           </View>
 

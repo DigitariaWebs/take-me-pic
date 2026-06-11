@@ -7,6 +7,7 @@ export { profileApi, type Profile, type LeaderboardEntry } from './api/profile-a
 export { useProfile, profileKeys } from './hooks/useProfile';
 export { useCreateProfile } from './hooks/useCreateProfile';
 export { useUpdateProfile } from './hooks/useUpdateProfile';
+export { useUploadAvatar } from './hooks/useUploadAvatar';
 export { useTrustedProfileGate } from './hooks/useTrustedProfileGate';
 export { useLeaderboard, leaderboardKeys } from './hooks/useLeaderboard';
 export {
