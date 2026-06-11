@@ -16,6 +16,9 @@ Add the minimum analytics, QA, and integration hardening needed before real-user
 - Add integration checks around RLS-sensitive Phase 1 operations.
 - Add manual QA checklist for the full requester/helper journey.
 - Confirm private data is not logged or exposed in analytics.
+- **Resume/reconnect hardening:** on app foreground/launch, re-query active request / session / conversation state (server is the source of truth), catch up on realtime events missed while backgrounded, and resubscribe. Realtime is foreground-only — see TASK-009 for push delivery.
+- **Dedupe:** enforce one active request per user so resume is unambiguous; surface the in-flight request/session on resume (auto-return or banner).
+- Handle expiry that elapsed while backgrounded (re-read shows `expired`).
 - Update docs/status after verification.
 
 ## User Flow
@@ -39,6 +42,9 @@ QA confirms end-to-end flow before TestFlight testing
 - [ ] Core analytics events are emitted with privacy-safe properties.
 - [ ] Auth/profile/request/session/photo/rating/report path has a QA checklist.
 - [ ] RLS-sensitive operations have at least manual or scripted verification notes.
+- [ ] On app resume, in-flight request/session/conversation state is re-queried and reconciled (missed realtime events caught up, subscriptions re-established).
+- [ ] One active request per user is enforced (dedupe); the in-flight request/session is surfaced on resume.
+- [ ] Expiry that elapsed while backgrounded is reflected on resume.
 - [ ] Supabase status docs reflect what is live.
 - [ ] `npm run typecheck` passes.
 

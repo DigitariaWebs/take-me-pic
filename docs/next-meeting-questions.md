@@ -24,3 +24,12 @@ Open product and engineering questions to resolve before implementation locks.
      - If support genuinely needs location context, prefer the **request-anchored snapshot** (`help_requests.location`, captured when the request was created) over live `presence`: it is tied to a concrete session-review purpose, not ongoing surveillance.
      - If/when we expose anything, the web side will require: **coarse precision** (snapped/rounded, mirroring the question-2 decision), a dedicated staff **capability** (not blanket staff access), an **audit log entry per view** (same pattern as Privileged content review), and respect for `share_radius_m`/presence-off state.
      - Decision needed from the meeting: is there a real support scenario (safety incident, no-show dispute) that justifies even the snapshot view in phase 1, or do we defer entirely?
+     
+5. make sure he opens an expo account and vercel one to streamline deployement.
+
+6. Background / killed-app handling for pending requests, accepts, and messages.
+   - Today delivery is **Supabase realtime (foreground only)** — backgrounded/killed users miss the live "accepted" / "new request" / "new message" event. Server state is durable (the request/conversation persist), so this is a **delivery + resume** problem, not data loss.
+   - Two parts, split across tasks so it doesn't slip:
+     - **Delivery → push (TASK-009):** server-side trigger (DB trigger / edge function) that emits a push on `status → accepted`, new nearby request, and new message; token registration; deep-link from the push into the right screen.
+     - **Resume/reconnect → hardening (TASK-011):** on app foreground/launch, re-query active request/session/conversation state, catch up on missed realtime events, resubscribe, and handle expiry-while-backgrounded.
+   - Decision needed: enforce **one active request per user** (dedupe) so resume is unambiguous? And what is the resume UX — auto-return to the in-flight request/session, or a banner?

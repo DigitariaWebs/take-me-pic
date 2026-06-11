@@ -16,6 +16,8 @@ Register push tokens and deliver important request/session notifications so help
 - Register device push token after login/profile completion.
 - Store/update token under authenticated user ownership.
 - Trigger notifications for request created, request accepted, session updates, and messages where needed.
+- Emit these from the **server** (DB trigger or edge function) on the relevant row/status changes — push is the delivery path for **backgrounded/killed** users, since realtime is foreground-only.
+- Deep-link from a tapped push into the correct screen (the in-flight request, the incoming request, or the conversation).
 - Add in-app fallback state when push is disabled.
 
 ## User Flow
@@ -39,6 +41,9 @@ User receives push or in-app fallback
 - [ ] Push token registration is tied to authenticated user.
 - [ ] Disabled notification permission shows a usable fallback.
 - [ ] Request and acceptance notifications can be triggered.
+- [ ] Backgrounded/killed users receive a push for request-accepted, incoming-request, and new-message (delivery does not depend on foreground realtime).
+- [ ] A server-side trigger/edge function emits the push on the relevant status/row change.
+- [ ] Tapping a push deep-links to the correct request/conversation.
 - [ ] Stale/replaced tokens are handled.
 - [ ] `npm run typecheck` passes.
 
