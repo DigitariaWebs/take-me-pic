@@ -1,6 +1,6 @@
 # TASK-004 - Wire Nearby Presence and Helper Map
 
-Status: Backlog
+Status: In Progress
 Priority: P1
 Project: Take Me Pic Mobile
 Milestone: Phase 1 MVP - Core help loop
@@ -54,22 +54,36 @@ Requester sees trusted face-pins with karma/profile signals
 
 ## Acceptance Criteria
 
-- [ ] Location denied state is explicit and does not write precise presence.
-- [ ] Presence is never written when visibility toggle is off.
-- [ ] Turning visibility on writes one scoped presence update after permission grant.
-- [ ] Turning visibility off clears or sets offline presence server-side.
-- [ ] Current-location button refreshes location and triggers one explicit presence refresh when visibility is on.
-- [ ] No heartbeat timer/background interval is used for presence updates.
-- [ ] Nearby lookup returns helpers by radius and excludes unsafe users.
-- [ ] Stale presence no longer appears.
-- [ ] UI keeps the approved map design.
+- [x] Location denied state is explicit and does not write precise presence. (useMapPresence returns null on denial; explicit on-map note; no write)
+- [x] Presence is never written when visibility toggle is off. (writes only in enable/refresh paths)
+- [x] Turning visibility on writes one scoped presence update after permission grant. (enable: locate → setAvailability)
+- [x] Turning visibility off clears or sets offline presence server-side. (goOffline upsert — verified via probe)
+- [x] Current-location button refreshes location and triggers one explicit presence refresh when visibility is on. (refresh())
+- [x] No heartbeat timer/background interval is used for presence updates. (no setInterval anywhere; event-driven only)
+- [x] Nearby lookup returns helpers by radius and excludes unsafe users. (find_available_helpers RPC — verified via probe)
+- [ ] Stale presence no longer appears. (server-side via RPC updated_at filter — needs seeded stale row to confirm)
+- [x] UI keeps the approved map design. (added only a current-location button; pins/chrome unchanged)
 - [ ] Map loading is measured and classified:
   - acceptable: first map paint <= 2.0s on normal network/device
   - target: first map paint <= 1.0s for MVP seeded nearby query in normal conditions
   - issue: repeated loads > 2.0s or visible jank/freeze during pan/zoom
-- [ ] Settings no longer contains `visible sur la carte`.
-- [ ] Profile no longer shows `je veux une photo` and `je veux aider`.
-- [ ] `npm run typecheck` passes.
+- [x] Settings no longer contains `visible sur la carte`. (confirmed absent)
+- [x] Profile no longer shows `je veux une photo` and `je veux aider`. (role buttons removed)
+- [x] `npm run typecheck` passes.
+
+## Implementation Notes (this PR)
+
+- Presence data layer (`src/features/presence`) verified against the live DB with
+  the publishable key: presence write (PostGIS geography as EWKT), the RPC
+  lookup, and go-offline all succeed.
+- **RPC coordinate gap:** `find_available_helpers` returns profile rows without
+  per-helper location/distance, so map pins use real helper identity with a
+  cosmetic scatter position/distance. Returning location + distance_m from the
+  RPC is a backend follow-up (added to `docs/next-meeting-questions.md`).
+- Language filter is not applied to live helpers (profile languages are names,
+  the filter chips are flag codes) — rating/verified/sort/distance are applied.
+- Runtime device verification (permission flow, toggle write/offline, refresh)
+  pending the standalone build + Maestro/manual pass.
 
 ## Technical Notes
 
