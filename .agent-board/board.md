@@ -24,7 +24,7 @@ Updated: 2026-06-11
 | TASK-004 | Wire nearby presence and helper map | Done | Agent | P1 |
 | TASK-005 | Wire help request create and accept lifecycle | Done | Agent | P1 |
 | TASK-006 | Wire realtime session chat | Done | Agent | P1 |
-| TASK-007 | Wire session photo transfer | Backlog | Agent | P1 |
+| TASK-007 | Wire session photo transfer | Review | Agent | P1 |
 | TASK-008 | Wire rating, karma, and leaderboard | Backlog | Agent | P1 |
 | TASK-009 | Wire push notification registration and delivery | Backlog | Agent | P1 |
 | TASK-010 | Wire trust, safety, and reporting flows | Backlog | Agent | P1 |

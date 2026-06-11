@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Share2, Download, Heart, Star } from 'lucide-react-native';
+import { Share2, Heart, Star, Plus } from 'lucide-react-native';
 import { PaperBackground } from '@/shared/ui/PaperBackground';
 import { NavBar, HomeIndicator } from '@/shared/ui/iOSChrome';
 import { Polaroid } from '@/shared/ui/Polaroid';
@@ -10,109 +10,98 @@ import { Stamp } from '@/shared/ui/Stamp';
 import { Button } from '@/shared/ui/Button';
 import { fonts, type ThemeColors } from '@/shared/constants/tokens';
 import { useThemeColors } from '@/shared/providers/ThemeProvider';
-import { galleryPhotos, leo } from '@/shared/data/mock';
+import { useAuth } from '@/shared/providers';
+import { useSessionPhotos } from '../hooks/useSessionPhotos';
 import { t } from '@/shared/lib/i18n';
-import { useRole } from '@/shared/providers/RoleProvider';
 
-/** 11 · Pellicule de la session. */
+/** Pellicule de la session — real session photos for a help request. */
 export default function Gallery() {
   const colors = useThemeColors();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { isHelper } = useRole();
+  const { request } = useLocalSearchParams<{ request?: string }>();
+  const requestId = request ? Number(request) : null;
+  const { user } = useAuth();
 
-  // Favorite state: set of photo indexes
+  const { photos, loading, uploading, uploadError, pickAndUpload, retry } = useSessionPhotos(requestId, user?.id);
   const [favorites, setFavorites] = useState<Set<number>>(new Set());
-  // "tout garder" confirmed state
-  const [keptAll, setKeptAll] = useState(false);
 
-  function toggleFavorite(index: number) {
+  function toggleFavorite(id: number) {
     setFavorites((prev) => {
       const next = new Set(prev);
-      if (next.has(index)) {
-        next.delete(index);
-      } else {
-        next.add(index);
-      }
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   }
+
+  const hero = photos[0];
+  const rest = photos.slice(1);
 
   return (
     <PaperBackground tone="paper">
       <View style={{ paddingTop: insets.top }}>
         <NavBar
           left={<Pressable onPress={() => router.back()}><Text style={styles.back}>← {t('common.back')}</Text></Pressable>}
-          title={isHelper ? t('flow.galleryHelper', { name: leo.firstName }) : t('flow.gallerySeeker', { name: leo.firstName })}
+          title="Pellicule"
           right={<Share2 size={22} color={colors.ink} />}
         />
       </View>
 
       <View style={{ paddingHorizontal: 22, paddingBottom: 14 }}>
-        <Text style={styles.heading}>{t('gallery.title', { n: 8, name: leo.firstName })}</Text>
+        <Text style={styles.heading}>{photos.length} photo(s)</Text>
         <Text style={styles.subHeading}>{t('gallery.subtitle')} ☼</Text>
-        <Text style={styles.mono}>{t('gallery.available', { time: '23 H 12 MIN' })}</Text>
+        {uploadError ? <Text style={styles.error}>{uploadError}</Text> : null}
       </View>
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: 22, paddingBottom: insets.bottom + 100 }}>
-        {/* Hero photo — index 0 */}
-        <Pressable onPress={() => toggleFavorite(0)} style={styles.hero}>
-          <Image source={{ uri: galleryPhotos[0].uri }} style={StyleSheet.absoluteFill} />
-          <View style={styles.cornersInner} pointerEvents="none" />
-          {favorites.has(0) ? (
-            <View style={{ position: 'absolute', top: 14, right: 14 }}>
-              <Stamp shape="rect" color="gold" size={70} fontSize={9} rotate={-6}>★ PRÉFÉRÉE</Stamp>
-            </View>
-          ) : (
-            <View style={styles.starHint}>
-              <Star size={18} color={colors.polaroid} />
-            </View>
-          )}
-          <Text style={styles.heroDate}>15·VI·26 — 09:46</Text>
-        </Pressable>
-
-        <View style={styles.grid}>
-          {galleryPhotos.slice(1).map((p, i) => {
-            const idx = i + 1;
-            const isFav = favorites.has(idx);
-            return (
-              <Pressable key={i} onPress={() => toggleFavorite(idx)} style={{ position: 'relative' }}>
-                <Polaroid
-                  width={92}
-                  height={82}
-                  rotate={(i % 2 === 0 ? -2 : 1.5)}
-                  source={{ uri: p.uri }}
-                  noCaption
-                  dark={false}
-                />
-                {isFav && (
-                  <View style={styles.favStar}>
-                    <Star size={14} color={colors.goldDeep} fill={colors.goldDeep} />
+        {requestId == null ? (
+          <Text style={styles.empty}>Ouvre la pellicule depuis une session.</Text>
+        ) : loading ? (
+          <ActivityIndicator color={colors.ink} style={{ marginTop: 40 }} />
+        ) : photos.length === 0 ? (
+          <Text style={styles.empty}>Aucune photo encore. Ajoute la première.</Text>
+        ) : (
+          <>
+            {hero?.url && (
+              <Pressable onPress={() => toggleFavorite(hero.id)} style={styles.hero}>
+                <Image source={{ uri: hero.url }} style={StyleSheet.absoluteFill} />
+                {favorites.has(hero.id) ? (
+                  <View style={{ position: 'absolute', top: 14, right: 14 }}>
+                    <Stamp shape="rect" color="gold" size={70} fontSize={9} rotate={-6}>★ PRÉFÉRÉE</Stamp>
                   </View>
+                ) : (
+                  <View style={styles.starHint}><Star size={18} color={colors.polaroid} /></View>
                 )}
               </Pressable>
-            );
-          })}
-          <View style={{ width: 92, alignItems: 'center', justifyContent: 'center' }}>
-            <Polaroid width={92} height={82} dark noCaption rotate={1.5}>
-              <Text style={styles.plus}>+3</Text>
-            </Polaroid>
-          </View>
-        </View>
+            )}
+
+            <View style={styles.grid}>
+              {rest.map((p, i) => (
+                <Pressable key={p.id} onPress={() => toggleFavorite(p.id)} style={{ position: 'relative' }}>
+                  <Polaroid width={92} height={82} rotate={i % 2 === 0 ? -2 : 1.5} source={{ uri: p.url ?? undefined }} noCaption />
+                  {favorites.has(p.id) && (
+                    <View style={styles.favStar}><Star size={14} color={colors.goldDeep} fill={colors.goldDeep} /></View>
+                  )}
+                </Pressable>
+              ))}
+            </View>
+          </>
+        )}
       </ScrollView>
 
       <View style={[styles.actions, { bottom: insets.bottom + 26 }]}>
         <Button
           variant="paper"
           full
-          icon={<Download size={18} color={colors.ink} />}
+          icon={uploading ? <ActivityIndicator color={colors.ink} /> : <Plus size={18} color={colors.ink} />}
           style={{ flex: 1 }}
-          onPress={() => setKeptAll(true)}
-          disabled={keptAll}
+          onPress={() => (uploadError ? void retry() : void pickAndUpload())}
+          disabled={uploading || requestId == null}
         >
-          {keptAll ? t('flow.keptAll') : t('gallery.keepAll')}
+          {uploadError ? 'réessayer' : 'ajouter une photo'}
         </Button>
         <View style={{ width: 10 }} />
         <Button
@@ -122,7 +111,7 @@ export default function Gallery() {
           style={{ flex: 1 }}
           onPress={() => router.push('/session/rating')}
         >
-          {t('gallery.rate', { name: leo.firstName })}
+          {t('gallery.rate', { name: '' })}
         </Button>
       </View>
       <HomeIndicator />
@@ -134,6 +123,8 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   back: { fontFamily: fonts.hand, fontSize: 20, color: colors.ink },
   heading: { fontFamily: fonts.hand, fontSize: 24, color: colors.ink, lineHeight: 28 },
   subHeading: { fontFamily: fonts.hand, fontSize: 22, color: colors.goldDeep },
+  error: { fontFamily: fonts.hand, fontSize: 15, color: colors.stampRed, marginTop: 6 },
+  empty: { fontFamily: fonts.hand, fontSize: 18, color: colors.inkFaded, textAlign: 'center', marginTop: 50 },
   mono: { fontFamily: fonts.type, fontSize: 10, color: colors.inkFaded, letterSpacing: 1.4, marginTop: 6 },
   hero: {
     height: 220,

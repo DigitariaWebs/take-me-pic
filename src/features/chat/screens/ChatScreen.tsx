@@ -59,13 +59,17 @@ export default function ChatScreen() {
   const meId = user?.id;
   const { items, send, retry } = useConversation(conversationId, meId);
 
-  // The other participant (for the header).
+  // The other participant (for the header) + the session this chat belongs to.
   const [otherId, setOtherId] = useState<string | null>(null);
+  const [requestId, setRequestId] = useState<number | null>(null);
   useEffect(() => {
     if (conversationId == null || !meId) return;
     let active = true;
     void chatApi.getOtherParticipantId(conversationId, meId).then((oid) => {
       if (active) setOtherId(oid);
+    });
+    void chatApi.getHelpRequestId(conversationId).then((rid) => {
+      if (active) setRequestId(rid);
     });
     return () => {
       active = false;
@@ -142,7 +146,11 @@ export default function ChatScreen() {
           value={input}
           onChangeText={setInput}
           onSend={() => handleSend(input)}
-          onAttach={comingSoon}
+          onAttach={() =>
+            requestId != null
+              ? router.push(`/session/gallery?request=${requestId}`)
+              : comingSoon()
+          }
           onRecordStart={comingSoon}
           onRecordStop={comingSoon}
           recording={false}

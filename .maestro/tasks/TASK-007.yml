@@ -1,0 +1,15 @@
+appId: com.takemepic.app
+# Boot smoke for the standalone build with session-photo transfer bundled.
+# Party-only upload/read + signed URL verified against the live DB (0007);
+# on-device pick-and-upload is the manual two-user check. Robust to onboarding
+# screen/language and stray iOS system dialogs.
+---
+- launchApp:
+    clearState: true
+- tapOn:
+    text: "Not Now"
+    optional: true
+- extendedWaitUntil:
+    visible: ".*(tap to begin|appuie pour commencer|اضغط للبدء|toca para empezar|sign in|se connecter|next|suivant|skip|selfies).*"
+    timeout: 20000
+- assertVisible: ".*(tap to begin|appuie pour commencer|اضغط للبدء|toca para empezar|sign in|se connecter|next|suivant|skip|selfies).*"
