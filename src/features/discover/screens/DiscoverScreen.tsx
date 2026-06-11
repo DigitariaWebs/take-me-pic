@@ -11,7 +11,7 @@ import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Search, SlidersHorizontal, Camera, X, Check } from 'lucide-react-native';
+import { Search, SlidersHorizontal, Camera, X, Check, LocateFixed } from 'lucide-react-native';
 import { HandMap } from '@/shared/ui/HandMap';
 import { Compass } from '@/shared/ui/Compass';
 import { Pin } from '@/shared/ui/Pin';
@@ -23,7 +23,27 @@ import { fonts, type ThemeColors } from '@/shared/constants/tokens';
 import { useThemeColors, useTheme } from '@/shared/providers/ThemeProvider';
 import { nearby, seekers, type User } from '@/shared/data/mock';
 import { useRole } from '@/shared/providers/RoleProvider';
+import { useAuth } from '@/shared/providers';
+import { useMapPresence, useNearbyHelpers, type NearbyHelper } from '@/features/presence';
 import { t } from '@/shared/lib/i18n';
+
+const FALLBACK_AVATAR = 'https://i.pravatar.cc/300?img=12';
+const DEFAULT_RADIUS_M = 2000;
+
+// Map a real helper profile to the minimal shape the map pin renders. The RPC
+// returns profiles without per-helper coordinates, so positions use the same
+// deterministic scatter as before (real identity, cosmetic placement) until the
+// RPC is extended to return location/distance — see docs/next-meeting-questions.
+function helperToPin(p: NearbyHelper) {
+  return {
+    id: p.id,
+    firstName: p.first_name,
+    avatar: p.avatar_url ?? FALLBACK_AVATAR,
+    rating: p.rating,
+    karma: p.karma,
+    verified: p.verified,
+  };
+}
 
 /** 05 · La carte du quartier — real map via expo-maps, branded indicators. */
 
@@ -418,7 +438,7 @@ const makeStyles = (colors: ThemeColors) =>
   });
 
 /** Custom map marker — the carnet pin (photo) with a name + distance tag. */
-function CarnetMapPin({ user, distanceM, highlight }: { user: User; distanceM: number; highlight: boolean }) {
+function CarnetMapPin({ user, distanceM, highlight }: { user: { firstName: string; avatar: string }; distanceM: number; highlight: boolean }) {
   const colors = useThemeColors();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
@@ -456,8 +476,12 @@ export default function CarteTab() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  // ── availability toggle ──────────────────────────────────────────────────
-  const [available, setAvailable] = useState(true);
+  // ── presence + map visibility (TASK-004) ─────────────────────────────────
+  // The visibility toggle is the single presence on/off control: turning it on
+  // requests location + writes presence; off clears it server-side. No heartbeat.
+  const { user } = useAuth();
+  const presence = useMapPresence(user?.id);
+  const available = presence.visible;
 
   // ── role drives the map: 'helper' (I help → see seekers) vs 'seeker' (I want a
   //    photo → see helpers). Persisted globally so the whole app adapts.
@@ -542,31 +566,33 @@ export default function CarteTab() {
     (filterMinRating > 0 ? 1 : 0) +
     (filterSort !== 'proche' ? 1 : 0);
 
-  // ── filtered + sorted pins ──────────────────────────────────────────────────
-  const pinnedAll = nearby.map((u, i) => ({
-    user: u,
-    index: i,
-    coordinates: {
-      latitude: center.latitude  + SCATTER[i].dy,
-      longitude: center.longitude + SCATTER[i].dx,
-    },
-    distanceM: SCATTER_DISTANCE_M[i],
-  }));
+  // ── nearby helpers from the find_available_helpers RPC (seeker view) ─────────
+  // Center on the user's GPS once visible, else the chosen neighbourhood.
+  const queryCenter = presence.coords ?? { lat: center.latitude, lng: center.longitude };
+  const radiusM = filterDistance ? DISTANCE_MAX_M[filterDistance] : DEFAULT_RADIUS_M;
+  const helpersQuery = useNearbyHelpers(queryCenter, radiusM, role === 'seeker');
+  const helperRows = helpersQuery.data ?? [];
 
-  const pinned = pinnedAll
+  // Real helper identities placed with the deterministic scatter (cosmetic
+  // position/distance until the RPC returns coordinates — see meeting questions).
+  // Filters that map to real profile fields are applied here; geo + availability
+  // filtering is already done server-side by the RPC.
+  const pinned = helperRows
+    .map((p, i) => {
+      const radius = 0.0011 + (i / Math.max(1, helperRows.length)) * 0.0085;
+      const angle = i * GOLDEN;
+      const dx = Math.cos(angle) * radius;
+      const dy = Math.sin(angle) * radius;
+      return {
+        user: helperToPin(p),
+        coordinates: { latitude: center.latitude + dy, longitude: center.longitude + dx },
+        distanceM: Math.round(Math.sqrt(dx * dx + dy * dy) * 111000),
+      };
+    })
     .filter((p) => {
-      if (filterAvailNow && !available) return false;
       if (filterDistance !== null && p.distanceM > DISTANCE_MAX_M[filterDistance]) return false;
       if (filterVerified && !p.user.verified) return false;
       if (filterMinRating > 0 && p.user.rating < filterMinRating) return false;
-      if (filterLanguages.length > 0) {
-        const userLangs = p.user.languages ?? [];
-        const hasLang = filterLanguages.some((code) => {
-          const opt = LANG_OPTIONS.find((l) => l.code === code);
-          return opt ? userLangs.includes(opt.flag) : false;
-        });
-        if (!hasLang) return false;
-      }
       return true;
     })
     .sort((a, b) => {
@@ -722,6 +748,54 @@ export default function CarteTab() {
 
       <Compass size={48} style={{ position: 'absolute', top: insets.top + 118, right: 18 }} />
 
+      {/* Current-location button — explicit "locate me + refresh my presence".
+          Presence only ever updates here or on the visibility toggle (no heartbeat). */}
+      <Pressable
+        accessibilityLabel="Ma position — actualiser"
+        onPress={() => {
+          void presence.refresh();
+          if (presence.coords) {
+            mapRef.current?.animateToRegion(
+              {
+                latitude: presence.coords.lat,
+                longitude: presence.coords.lng,
+                latitudeDelta: 0.016,
+                longitudeDelta: 0.016,
+              },
+              650,
+            );
+          }
+        }}
+        style={{
+          position: 'absolute',
+          top: insets.top + 174,
+          right: 18,
+          width: 48,
+          height: 48,
+          borderRadius: 24,
+          backgroundColor: colors.cardWhite,
+          borderWidth: 1.5,
+          borderColor: colors.ink,
+          alignItems: 'center',
+          justifyContent: 'center',
+          shadowColor: colors.ink,
+          shadowOpacity: 1,
+          shadowOffset: { width: 2, height: 2 },
+          shadowRadius: 0,
+          elevation: 4,
+        }}
+      >
+        <LocateFixed size={22} color={presence.busy ? colors.inkFaded : colors.ink} />
+      </Pressable>
+
+      {presence.permissionDenied && (
+        <View style={[styles.devNote, { top: insets.top + 120 }]}>
+          <Text style={styles.devNoteText}>
+            Active la localisation pour apparaître sur la carte.
+          </Text>
+        </View>
+      )}
+
       <View style={[styles.availability, { bottom: 110 }]}>
         <Ticket background={colors.inkSurface} notchColor={colors.paper2} style={{ paddingHorizontal: 18, paddingVertical: 14 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
@@ -740,7 +814,9 @@ export default function CarteTab() {
                   : t('carte.seekSub', { n: pinned.length })}
               </Text>
             </View>
-            {role === 'helper' && <JournalSwitch value={available} onValueChange={setAvailable} />}
+            {role === 'helper' && (
+              <JournalSwitch value={available} onValueChange={presence.toggle} />
+            )}
           </View>
         </Ticket>
       </View>
