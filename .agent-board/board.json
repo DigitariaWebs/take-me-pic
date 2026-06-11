@@ -80,7 +80,7 @@
     {
       "id": "TASK-007",
       "title": "Wire session photo transfer",
-      "status": "Review",
+      "status": "Done",
       "priority": "P1",
       "owner": "Agent",
       "path": ".agent-board/tasks/TASK-007.md",

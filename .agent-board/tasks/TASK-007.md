@@ -1,6 +1,6 @@
 # TASK-007 - Wire Session Photo Transfer
 
-Status: Review
+Status: Done
 Priority: P1
 Project: Take Me Pic Mobile
 Milestone: Phase 1 MVP - Core help loop
