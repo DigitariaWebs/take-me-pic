@@ -21,7 +21,7 @@ Updated: 2026-06-11
 | TASK-001 | Wire Supabase Auth shell and route gate | Done | Agent | P0 |
 | TASK-002 | Bootstrap profiles and auth gates | Done | Agent | P0 |
 | TASK-003 | Verify avatar storage and profile media upload | Done | Agent | P0 |
-| TASK-004 | Wire nearby presence and helper map | Backlog | Agent | P1 |
+| TASK-004 | Wire nearby presence and helper map | Review | Agent | P1 |
 | TASK-005 | Wire help request create and accept lifecycle | Backlog | Agent | P1 |
 | TASK-006 | Wire realtime session chat | Backlog | Agent | P1 |
 | TASK-007 | Wire session photo transfer | Backlog | Agent | P1 |

@@ -47,7 +47,7 @@
     {
       "id": "TASK-004",
       "title": "Wire nearby presence and helper map",
-      "status": "Backlog",
+      "status": "Review",
       "priority": "P1",
       "owner": "Agent",
       "path": ".agent-board/tasks/TASK-004.md",
