@@ -1,6 +1,6 @@
 # TASK-005 - Wire Help Request Create and Accept Lifecycle
 
-Status: In Progress
+Status: Review
 Priority: P1
 Project: Take Me Pic Mobile
 Milestone: Phase 1 MVP - Core help loop

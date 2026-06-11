@@ -1,0 +1,12 @@
+appId: com.takemepic.app
+# Boot smoke for the standalone (Release) build with the help-request lifecycle
+# changes bundled. The broadcast create/accept lifecycle is verified against the
+# live DB (publishable key); full two-user accept hand-off needs a second helper
+# account (manual).
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: ".*(appuie pour commencer|tap to begin|اضغط للبدء|toca para empezar).*"
+    timeout: 20000
+- assertVisible: ".*(appuie pour commencer|tap to begin|اضغط للبدء|toca para empezar).*"
