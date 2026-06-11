@@ -1,6 +1,6 @@
 # TASK-006 - Wire Realtime Session Chat
 
-Status: In Progress
+Status: Review
 Priority: P1
 Project: Take Me Pic Mobile
 Milestone: Phase 1 MVP - Core help loop
