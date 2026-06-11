@@ -1,0 +1,13 @@
+appId: com.takemepic.app
+# Boot smoke for the standalone (Release) build. clearState gives a deterministic
+# signed-out start so the app boots cleanly with the presence/map changes in the
+# bundle. Presence write/offline + the find_available_helpers RPC are verified
+# separately against the live DB (publishable key) — see TASK-004 notes; full
+# logged-in map/permission verification needs seeded available helpers.
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: ".*(appuie pour commencer|tap to begin|اضغط للبدء|toca para empezar).*"
+    timeout: 20000
+- assertVisible: ".*(appuie pour commencer|tap to begin|اضغط للبدء|toca para empezar).*"
