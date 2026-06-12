@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View, FlatList } from 'react-native';
+import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, FlatList } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Camera, X, Check } from 'lucide-react-native';
@@ -136,6 +136,10 @@ export default function Profile() {
         />
       </View>
 
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
       <ScrollView
         contentContainerStyle={{ paddingHorizontal: 26, paddingBottom: insets.bottom + 116 }}
         keyboardShouldPersistTaps="handled"
@@ -221,9 +225,10 @@ export default function Profile() {
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
       </ScrollView>
+      </KeyboardAvoidingView>
 
       <View style={[styles.cta, { bottom: insets.bottom + 26 }]}>
-        <Button full variant="gold" onPress={submitProfile} disabled={createProfile.isPending}>
+        <Button full variant="gold" onPress={submitProfile} loading={createProfile.isPending}>
           {t('profileSetup.cta')}
         </Button>
       </View>

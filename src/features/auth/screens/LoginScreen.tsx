@@ -162,7 +162,7 @@ export default function Login() {
       </View>
 
       <View style={[styles.cta, { bottom: insets.bottom + 26 }]}>
-        <Button full variant="ink" onPress={onSubmit} disabled={login.isPending || resendSignupVerification.isPending}>
+        <Button full variant="ink" onPress={onSubmit} loading={login.isPending || resendSignupVerification.isPending}>
           {t('ob.loginCta')}
         </Button>
         <Text style={styles.foot}>
@@ -229,8 +229,9 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   passwordRow: { flexDirection: 'row', alignItems: 'center' },
   passwordField: { flex: 1, marginBottom: 0 },
   eyeBtn: {
+    height: 46,
+    justifyContent: 'center',
     paddingHorizontal: 10,
-    paddingBottom: 12,
     borderBottomWidth: 1.5,
     borderColor: colors.ink,
   },

@@ -117,7 +117,7 @@ export default function Forgot() {
       {/* CTA zone */}
       <View style={[styles.cta, { bottom: insets.bottom + 26 }]}>
         {!sent ? (
-          <Button full variant="ink" onPress={onSend} disabled={resetPassword.isPending}>
+          <Button full variant="ink" onPress={onSend} loading={resetPassword.isPending}>
             {t('ob.forgotCta')}
           </Button>
         ) : (

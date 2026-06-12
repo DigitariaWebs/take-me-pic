@@ -2,13 +2,14 @@ import { useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronRight, MapPin, Eye, Shield, UserX, Flag, Globe, Bell, Crown, LogOut } from 'lucide-react-native';
+import { ChevronRight, MapPin, Shield, UserX, Flag, Globe, Bell, Crown, LogOut } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { PaperBackground } from '@/shared/ui/PaperBackground';
 import { NavBar } from '@/shared/ui/iOSChrome';
 import { Stamp } from '@/shared/ui/Stamp';
 import { Button } from '@/shared/ui/Button';
 import { JournalSwitch } from '@/shared/ui/JournalSwitch';
+import { LanguagePickerModal } from '@/shared/ui/LanguagePickerModal';
 import { useThemeColors, useTheme } from '@/shared/providers/ThemeProvider';
 import { fonts, type ThemeColors } from '@/shared/constants/tokens';
 import { t, useLocale, type LocaleTag } from '@/shared/lib/i18n';
@@ -144,8 +145,8 @@ export default function Settings() {
   const router = useRouter();
   const { data: blockedUsers } = useBlockedUsers();
   const [gps, setGps] = useState(true);
-  const [visible, setVisible] = useState(true);
   const [locale, setLocale] = useLocale();
+  const [langPickerVisible, setLangPickerVisible] = useState(false);
   const languageValues: Record<LocaleTag, string> = {
     fr: t('setx.langFr'),
     en: t('setx.langEn'),
@@ -268,13 +269,6 @@ export default function Settings() {
             <JournalSwitch value={gps} onValueChange={setGps} />
           </Row>
           <Row
-            icon={<Eye size={16} color={colors.polaroid} />}
-            iconBg={colors.stampBlue}
-            label={t('settings.items.visible.title')}
-          >
-            <JournalSwitch value={visible} onValueChange={setVisible} />
-          </Row>
-          <Row
             icon={<Shield size={16} color={colors.polaroid} />}
             iconBg={colors.goldDeep}
             label={t('settings.items.gdpr.title')}
@@ -310,11 +304,7 @@ export default function Settings() {
             iconBg={colors.sunset}
             label={t('settings.items.language.title')}
             trailingText={languageValues[locale]}
-            onPress={() => {
-              const order: LocaleTag[] = ['fr', 'en', 'ar', 'es'];
-              const next = order[(order.indexOf(locale) + 1) % order.length];
-              void setLocale(next);
-            }}
+            onPress={() => setLangPickerVisible(true)}
             chevron
           />
           <Row
@@ -340,6 +330,13 @@ export default function Settings() {
           <Text style={styles.appVersion}>{t('setx.appVersion')}</Text>
         </View>
       </ScrollView>
+
+      <LanguagePickerModal
+        visible={langPickerVisible}
+        selected={locale}
+        onClose={() => setLangPickerVisible(false)}
+        onSelect={(l) => void setLocale(l)}
+      />
     </PaperBackground>
   );
 }

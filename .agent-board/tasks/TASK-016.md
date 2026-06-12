@@ -1,6 +1,6 @@
 # TASK-016 - UX: button loading states, language dropdown, remove two controls
 
-Status: Backlog
+Status: Review
 Priority: P2
 Project: Take Me Pic Mobile
 Milestone: Phase 1 MVP - Polish
@@ -31,12 +31,12 @@ GitHub issue #12 "Ux issues" (ProgixDev/take-me-pic).
 
 ## Acceptance Criteria
 
-- [ ] The shared `Button` supports a loading state and shows it while an async action runs (disabled + spinner), wired on the primary API-backed buttons.
-- [ ] Language is chosen from a dropdown/picker, not a direct cycle.
-- [ ] The "available now" slider is gone from the home filter section.
-- [ ] The "visible on the map" control is gone from the profile screen.
-- [ ] `npm run typecheck` passes.
-- [ ] Maestro boot smoke (Release build) stays green.
+- [x] The shared `Button` supports a `loading` state (spinner + disabled + dim), wired on the primary API-backed CTAs: profile-create, login, signup, forgot, reset, rating-submit, request-accept.
+- [x] Language is chosen from a dropdown/picker (`LanguagePickerModal`), not a direct cycle.
+- [x] The "available now" slider is gone from the home filter section (it was redundant — `find_available_helpers` already returns only available helpers; removed the row + staging/applied state + count).
+- [x] The "visible on the map" control is removed. _Note: it existed only in Settings ▸ Privacy (unwired local state), not on the profile screen; removed there. Real presence visibility is the home "active now" toggle._
+- [x] `npm run typecheck` passes.
+- [x] Maestro (Release build) stays green (boots + reaches the login screen with the password-field fix).
 
 ## Technical Notes
 

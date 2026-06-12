@@ -513,7 +513,6 @@ export default function CarteTab() {
   const [filterModalVisible, setFilterModalVisible] = useState(false);
 
   // Staging state (applied only on "appliquer")
-  const [stagingAvailNow,  setStagingAvailNow]  = useState(false);
   const [stagingDistance,  setStagingDistance]  = useState<DistanceOption | null>(null);
   const [stagingLanguages, setStagingLanguages] = useState<string[]>([]);
   const [stagingVerified,  setStagingVerified]  = useState(false);
@@ -521,7 +520,6 @@ export default function CarteTab() {
   const [stagingSort,      setStagingSort]      = useState<SortKey>('proche');
 
   // Applied state
-  const [filterAvailNow,  setFilterAvailNow]  = useState(false);
   const [filterDistance,  setFilterDistance]  = useState<DistanceOption | null>(null);
   const [filterLanguages, setFilterLanguages] = useState<string[]>([]);
   const [filterVerified,  setFilterVerified]  = useState(false);
@@ -530,7 +528,6 @@ export default function CarteTab() {
 
   const openFilterModal = () => {
     // Pre-fill staging from applied
-    setStagingAvailNow(filterAvailNow);
     setStagingDistance(filterDistance);
     setStagingLanguages([...filterLanguages]);
     setStagingVerified(filterVerified);
@@ -540,7 +537,6 @@ export default function CarteTab() {
   };
 
   const applyFilters = () => {
-    setFilterAvailNow(stagingAvailNow);
     setFilterDistance(stagingDistance);
     setFilterLanguages([...stagingLanguages]);
     setFilterVerified(stagingVerified);
@@ -550,7 +546,6 @@ export default function CarteTab() {
   };
 
   const resetFilters = () => {
-    setStagingAvailNow(false);
     setStagingDistance(null);
     setStagingLanguages([]);
     setStagingVerified(false);
@@ -560,7 +555,6 @@ export default function CarteTab() {
 
   // Count active filter conditions for the badge
   const activeFilterCount =
-    (filterAvailNow ? 1 : 0) +
     (filterDistance !== null ? 1 : 0) +
     (filterLanguages.length > 0 ? 1 : 0) +
     (filterVerified ? 1 : 0) +
@@ -906,14 +900,6 @@ export default function CarteTab() {
           <View style={styles.sheetDivider} />
 
           <ScrollView contentContainerStyle={styles.sheetBody}>
-            {/* ── disponibles maintenant ── */}
-            <View style={styles.filterRow}>
-              <Text style={styles.filterLabel}>{t('carte.availNow')}</Text>
-              <JournalSwitch value={stagingAvailNow} onValueChange={setStagingAvailNow} />
-            </View>
-
-            <View style={styles.sheetDivider} />
-
             {/* ── distance ── */}
             <Text style={styles.filterSectionTitle}>{t('carte.distance')}</Text>
             <View style={styles.chipsRow}>

@@ -170,7 +170,8 @@ export default function Incoming() {
               full
               icon={<Camera size={14} color={colors.ink} />}
               onPress={() => void accept()}
-              disabled={!open || busy}
+              loading={busy}
+              disabled={!open}
             >
               {t('flow.acceptSeeker')}
             </Button>
