@@ -170,6 +170,26 @@
       "blockedBy": [
         "TASK-011"
       ]
+    },
+    {
+      "id": "TASK-015",
+      "title": "UI fixes: input alignment, keyboard overlap, active toggle",
+      "status": "Backlog",
+      "priority": "P2",
+      "owner": "Agent",
+      "path": ".agent-board/tasks/TASK-015.md",
+      "blockedBy": [],
+      "source": "gh#11"
+    },
+    {
+      "id": "TASK-016",
+      "title": "UX: button loading states, language dropdown, remove two controls",
+      "status": "Backlog",
+      "priority": "P2",
+      "owner": "Agent",
+      "path": ".agent-board/tasks/TASK-016.md",
+      "blockedBy": [],
+      "source": "gh#12"
     }
   ]
 }
