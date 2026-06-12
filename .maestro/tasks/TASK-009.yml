@@ -1,0 +1,31 @@
+appId: com.takemepic.app
+# TASK-009 boot smoke for the standalone build with push notifications bundled.
+#
+# This gate proves the new push integration does not break startup: the
+# module-scope expo-notifications setNotificationHandler, the PushRegistrar
+# mounted in the authenticated shell, the expo-notifications config plugin, and
+# the real-data NotificationsScreen all load cleanly. A simulator cannot mint an
+# Expo push token (Device.isDevice is false) and cannot receive APNs/FCM, so the
+# registration path no-ops here by design and the app must still boot.
+#
+# Backend-dependent behavior (server triggers writing notifications rows on
+# request/accept/message, push_tokens ownership + RLS, the token upsert re-bind)
+# is verified against the live DB. Real push receipt, the OS-push tap deep-link,
+# and receipt-based token pruning are the manual on-device checks (EAS dev build
+# on a physical device). The in-app notifications screen + push-off fallback
+# banner sit behind the auth gate; reached on a logged-in device, not in this
+# unauthenticated boot smoke.
+---
+- launchApp:
+    clearState: true
+# Tolerate any stray iOS system dialog (location / notification permission).
+- tapOn:
+    text: ".*(Allow|Don.t Allow|Not Now|Autoriser|Ne pas autoriser){1}.*"
+    optional: true
+- tapOn:
+    text: "Not Now"
+    optional: true
+- extendedWaitUntil:
+    visible: ".*(tap to begin|appuie pour commencer|اضغط للبدء|toca para empezar|sign in|se connecter|next|suivant|skip|selfies).*"
+    timeout: 20000
+- assertVisible: ".*(tap to begin|appuie pour commencer|اضغط للبدء|toca para empezar|sign in|se connecter|next|suivant|skip|selfies).*"

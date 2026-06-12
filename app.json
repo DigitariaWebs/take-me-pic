@@ -46,6 +46,12 @@
           "requestLocationPermission": true,
           "locationPermission": "Take Me Pic utilise ta position pour trouver des photographes à proximité, uniquement pendant une session active."
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#d9b566"
+        }
       ]
     ],
     "experiments": {

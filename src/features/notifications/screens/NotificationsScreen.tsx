@@ -1,8 +1,7 @@
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Camera, MapPin } from 'lucide-react-native';
+import { Camera, MapPin, BellOff } from 'lucide-react-native';
 import { PaperBackground } from '@/shared/ui/PaperBackground';
 import { NavBar } from '@/shared/ui/iOSChrome';
 import { Polaroid } from '@/shared/ui/Polaroid';
@@ -12,13 +11,20 @@ import { Button } from '@/shared/ui/Button';
 import { Squiggle } from '@/shared/ui/Squiggle';
 import { useThemeColors } from '@/shared/providers/ThemeProvider';
 import { fonts, type ThemeColors } from '@/shared/constants/tokens';
-import { notifications as rawNotifications, type Notification } from '@/shared/data/mock';
+import type { NotificationKind } from '@/shared/lib/supabase';
 import { t } from '@/shared/lib/i18n';
-import { useRole } from '@/shared/providers/RoleProvider';
+import {
+  useNotifications,
+  useMarkNotificationRead,
+  useMarkAllNotificationsRead,
+} from '../hooks/useNotifications';
+import { usePushPermission } from '../hooks/usePushPermission';
+import { routeFromNotificationData } from '../lib/push';
+import type { NotificationRow } from '../api/notifications-api';
 
 type FilterKind = 'toutes' | 'demandes' | 'karma' | 'communauté';
 
-const FILTER_KINDS: Record<FilterKind, Notification['kind'] | null> = {
+const FILTER_KINDS: Record<FilterKind, NotificationKind | null> = {
   toutes: null,
   demandes: 'request',
   karma: 'karma',
@@ -32,23 +38,78 @@ const FILTER_LABEL_KEYS: Record<FilterKind, string> = {
   communauté: 'setx.filterCommunity',
 };
 
+type NotifVM = {
+  id: number;
+  kind: NotificationKind;
+  body: string;
+  meta?: string;
+  emphasis?: 'gold' | 'red' | 'normal';
+  read: boolean;
+  isToday: boolean;
+  time: string;
+  data: NotificationRow['data'];
+};
+
+/** Short relative label shown under each card. */
+function relativeTime(iso: string): string {
+  const then = new Date(iso).getTime();
+  const diffMin = Math.max(0, Math.round((Date.now() - then) / 60000));
+  if (diffMin < 1) return "à l'instant";
+  if (diffMin < 60) return `il y a ${diffMin} min`;
+  const diffH = Math.round(diffMin / 60);
+  if (diffH < 24) return `il y a ${diffH} h`;
+  const diffD = Math.round(diffH / 24);
+  return `il y a ${diffD} j`;
+}
+
+function isSameDay(iso: string): boolean {
+  const d = new Date(iso);
+  const now = new Date();
+  return (
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate()
+  );
+}
+
+function toViewModel(row: NotificationRow): NotifVM {
+  const emphasis = row.emphasis === 'gold' || row.emphasis === 'red' || row.emphasis === 'normal'
+    ? row.emphasis
+    : undefined;
+  return {
+    id: row.id,
+    kind: row.kind,
+    body: row.body,
+    meta: row.meta ?? undefined,
+    emphasis,
+    read: row.read_at != null,
+    isToday: isSameDay(row.created_at),
+    time: relativeTime(row.created_at),
+    data: row.data,
+  };
+}
+
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   markAll: { fontFamily: fonts.hand, fontSize: 16, color: colors.goldDeep },
   markAllDone: { color: colors.stampGreen },
   headline: { fontFamily: fonts.hand, fontSize: 24, color: colors.ink, lineHeight: 28 },
   chipRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
   sectionLabel: { fontFamily: fonts.type, fontSize: 10, color: colors.inkFaded, letterSpacing: 1.8, marginBottom: 8 },
-  card: {
+  emptyText: { fontFamily: fonts.hand, fontSize: 16, color: colors.inkFaded, textAlign: 'center', marginTop: 40 },
+  banner: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    borderWidth: 1.5,
+    marginHorizontal: 22,
+    marginTop: 14,
     paddingHorizontal: 12,
     paddingVertical: 10,
+    borderWidth: 1.5,
+    borderColor: colors.ink,
+    backgroundColor: 'rgba(217,181,102,0.15)',
   },
-  kindBox: { width: 38, height: 38, backgroundColor: colors.stampGreen, alignItems: 'center', justifyContent: 'center' },
-  cardMeta: { fontFamily: fonts.hand, fontSize: 13, color: colors.inkFaded, marginTop: 2 },
-  emptyText: { fontFamily: fonts.hand, fontSize: 16, color: colors.inkFaded, textAlign: 'center', marginTop: 40 },
+  bannerTitle: { fontFamily: fonts.serifBold, fontSize: 13, color: colors.ink },
+  bannerBody: { fontFamily: fonts.hand, fontSize: 13, color: colors.inkFaded, marginTop: 1 },
 });
 
 /** 27 · La pile de notes. */
@@ -57,51 +118,31 @@ export default function Notifications() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const insets = useSafeAreaInsets();
-  const router = useRouter();
-  const { role } = useRole();
+  const { data: rows, isLoading } = useNotifications();
+  const markRead = useMarkNotificationRead();
+  const markAll = useMarkAllNotificationsRead();
+  const { status: pushStatus, enable: enablePush } = usePushPermission();
 
   const [activeFilter, setActiveFilter] = useState<FilterKind>('toutes');
-  const [readIds, setReadIds] = useState<Set<string>>(new Set());
-  const [notifs, setNotifs] = useState<Notification[]>(rawNotifications);
 
+  const notifs = useMemo(() => (rows ?? []).map(toViewModel), [rows]);
   const kindFilter = FILTER_KINDS[activeFilter];
 
-  /** Build a role-aware body for request notifications. */
-  function requestBody(n: Notification): string {
-    if (n.kind !== 'request') return n.body;
-    if (role === 'helper') {
-      // Extract name + dist from mock body "**Yasmine** demande une photo à 120 m"
-      const nameMatch = n.body.match(/\*\*([^*]+)\*\*/);
-      const distMatch = n.body.match(/à (\d+\s*m)/);
-      const name = nameMatch ? nameMatch[1] : "Quelqu'un";
-      const dist = distMatch ? distMatch[1] : '?';
-      return t('setx.notifRequestHelper', { name: `**${name}**`, dist });
-    }
-    // seeker — confirmation that someone accepted
-    const nameMatch = n.body.match(/\*\*([^*]+)\*\*/);
-    const name = nameMatch ? nameMatch[1] : "Quelqu'un";
-    return t('setx.notifRequestSeeker', { name: `**${name}**` });
-  }
-
-  // Split by "today" (first 3) vs "yesterday" (rest) using original index
-  const todayIds = new Set(notifs.slice(0, 3).map((n) => n.id));
-  const yesterdayIds = new Set(notifs.slice(3).map((n) => n.id));
-
   const filtered = kindFilter ? notifs.filter((n) => n.kind === kindFilter) : notifs;
-  const todayFiltered = filtered.filter((n) => todayIds.has(n.id));
-  const yesterdayFiltered = filtered.filter((n) => yesterdayIds.has(n.id));
+  const todayFiltered = filtered.filter((n) => n.isToday);
+  const earlierFiltered = filtered.filter((n) => !n.isToday);
 
-  const unreadCount = notifs.filter((n) => !readIds.has(n.id)).length;
+  const unreadCount = notifs.filter((n) => !n.read).length;
+  const allRead = notifs.length > 0 && unreadCount === 0;
+  const showPushBanner = pushStatus != null && pushStatus !== 'granted';
 
   function handleMarkAll() {
-    setReadIds(new Set(notifs.map((n) => n.id)));
+    if (unreadCount > 0) markAll.mutate();
   }
 
-  function handleCardPress(n: Notification) {
-    setReadIds((prev) => new Set([...prev, n.id]));
-    if (n.kind === 'request') {
-      router.push('/request/incoming');
-    }
+  function openNotif(n: NotifVM) {
+    if (!n.read) markRead.mutate(n.id);
+    routeFromNotificationData(n.data);
   }
 
   return (
@@ -111,17 +152,27 @@ export default function Notifications() {
           left={<View style={{ width: 30 }} />}
           title={t('notifications.title')}
           right={
-            <Pressable onPress={handleMarkAll} hitSlop={8}>
-              <Text style={[styles.markAll, readIds.size === notifs.length && styles.markAllDone]}>
-                {readIds.size === notifs.length ? t('setx.allRead') : t('notifications.markAll')}
+            <Pressable onPress={handleMarkAll} hitSlop={8} disabled={allRead}>
+              <Text style={[styles.markAll, allRead && styles.markAllDone]}>
+                {allRead ? t('setx.allRead') : t('notifications.markAll')}
               </Text>
             </Pressable>
           }
         />
       </View>
 
+      {showPushBanner ? (
+        <Pressable style={styles.banner} onPress={enablePush} testID="push-off-banner">
+          <BellOff size={20} color={colors.ink} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.bannerTitle}>{t('notifications.pushOffTitle')}</Text>
+            <Text style={styles.bannerBody}>{t('notifications.pushOffBody')}</Text>
+          </View>
+        </Pressable>
+      ) : null}
+
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 30 }}>
-        <View style={{ paddingHorizontal: 22 }}>
+        <View style={{ paddingHorizontal: 22, paddingTop: 14 }}>
           <View style={{ flexDirection: 'row', alignItems: 'baseline', flexWrap: 'wrap' }}>
             <Text style={styles.headline}>
               {unreadCount > 0 ? `${unreadCount} nouvelle${unreadCount > 1 ? 's' : ''}` : 'tout lu'}{'\n'}
@@ -144,61 +195,53 @@ export default function Notifications() {
         </View>
 
         <View style={{ paddingHorizontal: 22, paddingTop: 18 }}>
-          {/* Today */}
-          {todayFiltered.length > 0 ? (
+          {isLoading ? (
+            <View style={{ paddingTop: 40, alignItems: 'center', gap: 12 }}>
+              <ActivityIndicator color={colors.goldDeep} />
+              <Text style={styles.emptyText}>{t('notifications.loading')}</Text>
+            </View>
+          ) : (
             <>
-              <Text style={styles.sectionLabel}>{t('notifications.today')}</Text>
-              <View style={{ gap: 10 }}>
-                {todayFiltered.map((n, i) => (
-                  <Card
-                    key={n.id}
-                    n={n}
-                    rotate={i === 0 ? -0.4 : 0.4}
-                    isRead={readIds.has(n.id)}
-                    onPress={() => handleCardPress(n)}
-                    overrideBody={n.kind === 'request' ? requestBody(n) : undefined}
-                  >
-                    {n.kind === 'request' && (
-                      <Button
-                        size="sm"
-                        variant="gold"
-                        style={{ paddingHorizontal: 10 }}
-                        onPress={() => {
-                          setReadIds((prev) => new Set([...prev, n.id]));
-                          router.push('/request/incoming');
-                        }}
-                      >
-                        {t('notifications.view')}
-                      </Button>
-                    )}
-                  </Card>
-                ))}
-              </View>
-            </>
-          ) : null}
+              {/* Today */}
+              {todayFiltered.length > 0 ? (
+                <>
+                  <Text style={styles.sectionLabel}>{t('notifications.today')}</Text>
+                  <View style={{ gap: 10 }}>
+                    {todayFiltered.map((n, i) => (
+                      <Card key={n.id} n={n} rotate={i % 2 === 0 ? -0.4 : 0.4} onPress={() => openNotif(n)}>
+                        {n.kind === 'request' && (
+                          <Button
+                            size="sm"
+                            variant="gold"
+                            style={{ paddingHorizontal: 10 }}
+                            onPress={() => openNotif(n)}
+                          >
+                            {t('notifications.view')}
+                          </Button>
+                        )}
+                      </Card>
+                    ))}
+                  </View>
+                </>
+              ) : null}
 
-          {/* Yesterday */}
-          {yesterdayFiltered.length > 0 ? (
-            <>
-              <Text style={[styles.sectionLabel, { marginTop: 18 }]}>{t('notifications.yesterday')}</Text>
-              <View style={{ gap: 10 }}>
-                {yesterdayFiltered.map((n, i) => (
-                  <Card
-                    key={n.id}
-                    n={n}
-                    rotate={i === 0 ? -0.3 : i === 2 ? 0.4 : 0}
-                    isRead={readIds.has(n.id)}
-                    onPress={() => handleCardPress(n)}
-                    overrideBody={n.kind === 'request' ? requestBody(n) : undefined}
-                  />
-                ))}
-              </View>
-            </>
-          ) : null}
+              {/* Earlier */}
+              {earlierFiltered.length > 0 ? (
+                <>
+                  <Text style={[styles.sectionLabel, { marginTop: 18 }]}>{t('notifications.yesterday')}</Text>
+                  <View style={{ gap: 10 }}>
+                    {earlierFiltered.map((n, i) => (
+                      <Card key={n.id} n={n} rotate={i % 2 === 0 ? -0.3 : 0.4} onPress={() => openNotif(n)} />
+                    ))}
+                  </View>
+                </>
+              ) : null}
 
-          {filtered.length === 0 ? (
-            <Text style={styles.emptyText}>{t('setx.emptyNotifs')}</Text>
-          ) : null}
+              {filtered.length === 0 ? (
+                <Text style={styles.emptyText}>{t('setx.emptyNotifs')}</Text>
+              ) : null}
+            </>
+          )}
         </View>
       </ScrollView>
     </PaperBackground>
@@ -208,19 +251,16 @@ export default function Notifications() {
 function Card({
   n,
   rotate,
-  isRead,
   onPress,
-  overrideBody,
   children,
 }: {
-  n: Notification;
+  n: NotifVM;
   rotate: number;
-  isRead: boolean;
   onPress: () => void;
-  overrideBody?: string;
   children?: React.ReactNode;
 }) {
   const colors = useThemeColors();
+  const isRead = n.read;
 
   const inkOffset = !isRead && n.emphasis === 'red'
     ? colors.stampRed
@@ -276,10 +316,10 @@ function Card({
       ) : n.kind === 'badge' ? (
         <Stamp shape="circle" color="gold" size={38} fontSize={7}>{`TOP\n3 %\n★`}</Stamp>
       ) : (
-        <Polaroid width={38} height={32} noCaption rotate={-3} source={n.avatar ? { uri: n.avatar } : undefined} />
+        <Polaroid width={38} height={32} noCaption rotate={-3} />
       )}
       <View style={{ flex: 1 }}>
-        <RichText text={overrideBody ?? n.body} />
+        <RichText text={n.body} />
         <Text style={[{ fontFamily: fonts.hand, fontSize: 13, color: colors.inkFaded, marginTop: 2 }, !isRead && n.emphasis === 'red' && { color: colors.stampRed }]}>
           {n.meta ?? n.time}
         </Text>

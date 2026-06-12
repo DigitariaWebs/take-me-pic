@@ -102,7 +102,7 @@
     {
       "id": "TASK-009",
       "title": "Wire push notification registration and delivery",
-      "status": "Backlog",
+      "status": "Review",
       "priority": "P1",
       "owner": "Agent",
       "path": ".agent-board/tasks/TASK-009.md",

@@ -282,6 +282,9 @@ const fr = {
     yesterday: '— HIER —',
     filters: ['toutes', 'demandes', 'karma', 'communauté'],
     view: 'voir',
+    pushOffTitle: 'notifications push désactivées',
+    pushOffBody: 'activez-les pour ne rien manquer · appuie ici',
+    loading: 'chargement…',
   },
 };
 

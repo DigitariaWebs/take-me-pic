@@ -32,4 +32,12 @@ Open product and engineering questions to resolve before implementation locks.
    - Two parts, split across tasks so it doesn't slip:
      - **Delivery → push (TASK-009):** server-side trigger (DB trigger / edge function) that emits a push on `status → accepted`, new nearby request, and new message; token registration; deep-link from the push into the right screen.
      - **Resume/reconnect → hardening (TASK-011):** on app foreground/launch, re-query active request/session/conversation state, catch up on missed realtime events, resubscribe, and handle expiry-while-backgrounded.
+
+7. Push delivery infrastructure (surfaced while building TASK-009).
+   - **MVP decision (taken): dispatch push from a DB trigger via `pg_net` → Expo Push API**, rather than a deployed edge function. Rationale: self-contained in migration `0009` (one apply step, nothing to deploy/verify separately), server-initiated so it reaches backgrounded/killed devices, and idiomatic (Supabase Database Webhooks are pg_net under the hood). Trade-off: couples delivery to the DB and is harder to add retry/observability to than a function. Decision needed: confirm pg_net-from-trigger for phase 1, or move dispatch into an edge function once deploy tooling is set up.
+   - **Android push is deferred:** no `google-services.json` / FCM project in the repo, so Android tokens won't deliver. iOS via APNs (EAS-managed) works. Decision needed: stand up an FCM project + Android credentials (relates to Q5 — Expo/EAS account setup).
+   - **Real delivery is not testable in the agent-board loop:** APNs/FCM receipt, the OS-push tap deep-link, and Expo `DeviceNotRegistered` receipt-based token pruning all require an **EAS dev build on a physical device**. Simulator Maestro covers only the in-app path + permission-off fallback. These criteria ship as `manual`.
+   - **`incoming_request` fan-out at scale:** every new request notifies all nearby available helpers. Fine for MVP volumes; needs rate-limiting / batching / per-helper quiet-hours before growth. Decision needed: acceptable for phase 1?
+   - **Push payload privacy (taken):** push body excludes message text and precise location (routing IDs only travel in `data`). Confirm this is the desired privacy posture, or allow a message preview in-body.
+   - **Notification preferences / quiet hours:** not in MVP. Confirm deferral.
    - Decision needed: enforce **one active request per user** (dedupe) so resume is unambiguous? And what is the resume UX — auto-return to the in-flight request/session, or a banner?

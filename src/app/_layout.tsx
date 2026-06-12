@@ -17,6 +17,7 @@ import {
 import { colors } from '@/shared/constants/tokens';
 import { View } from 'react-native';
 import { ProfileGateErrorState, useTrustedProfileGate } from '@/features/profile';
+import { PushRegistrar } from '@/features/notifications';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -99,6 +100,7 @@ function RootShell() {
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: c.paper }}>
       <SafeAreaProvider>
         <RoleProvider>
+        <PushRegistrar />
         <StatusBar style={isDark ? 'light' : 'dark'} />
         <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.paper } }}>
           <Stack.Screen name="index" />
