@@ -2,7 +2,7 @@
   "project": "Take Me Pic Mobile",
   "currentFocus": "Supabase-backed authentication and trusted profile foundation",
   "currentMilestone": "Phase 1 MVP - Auth first",
-  "updated": "2026-06-11",
+  "updated": "2026-06-12",
   "recommendedStart": "TASK-001",
   "columns": [
     "Backlog",
@@ -91,7 +91,7 @@
     {
       "id": "TASK-008",
       "title": "Wire rating, karma, and leaderboard",
-      "status": "Backlog",
+      "status": "Review",
       "priority": "P1",
       "owner": "Agent",
       "path": ".agent-board/tasks/TASK-008.md",

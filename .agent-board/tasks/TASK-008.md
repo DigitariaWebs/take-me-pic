@@ -1,6 +1,6 @@
 # TASK-008 - Wire Rating, Karma, and Leaderboard
 
-Status: In Progress
+Status: Review
 Priority: P1
 Project: Take Me Pic Mobile
 Milestone: Phase 1 MVP - Reputation
