@@ -52,6 +52,9 @@ QA confirms end-to-end flow before TestFlight testing
 
 - Source docs: `docs/product/prd.md`, `docs/SUPABASE-INTEGRATION-STATUS.md`.
 - Avoid sending precise GPS, raw message text, or private photo URLs to analytics.
+- Backend sync: `docs/WEB-BACKEND-SYNC.md` — integration hardening should
+  re-test reads against the current RLS (spots pre-moderation, content
+  soft-hide, karma ledger staff read), not pre-2026-06-11 policies.
 
 ## Dependencies
 

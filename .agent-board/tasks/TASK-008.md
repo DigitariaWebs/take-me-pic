@@ -52,6 +52,10 @@ Leaderboard reflects eligible helpers
 
 - Source docs: `docs/specs/008-rating-karma/spec.md`, `docs/features/phase_1/rating_karma_leaderboard_flow.md`.
 - Keep reputation changes deterministic and server-owned.
+- Backend sync: `docs/WEB-BACKEND-SYNC.md` §3 — web admin now reads every
+  user's karma ledger (`karma_ledger_staff_read`) and shows ratings on
+  user/session review. Keep `karma_ledger.reason` values stable; rating
+  comments are not a report target yet (coordinate before adding).
 
 ## Dependencies
 

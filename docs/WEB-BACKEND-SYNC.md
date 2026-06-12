@@ -1,0 +1,116 @@
+# Web Backend Sync — Shared Supabase Changes Made by the Web/Admin Repo
+
+Date: 2026-06-12
+Audience: this mobile repo's agents and devs.
+Source: `/Users/macbookpro/Documents/Progix/take-my-pic-web/take-me-pic-web`
+(see its `docs/MOBILE-SYNC-NOTES.md` and `docs/adr/` for full rationale).
+Status: all changes below are LIVE on the shared Supabase project
+`oxexcljzzemfenzogcnz` as recorded migrations.
+
+The web admin console runs live trust-and-safety operations against the same
+database this app uses. The web repo changed schema, RLS, and added staff-only
+RPCs that affect mobile behavior. Read the section matching your task before
+wiring a feature.
+
+**Convention:** whoever changes the shared Supabase schema updates this file
+here AND `docs/MOBILE-SYNC-NOTES.md` in the web repo. The database is the only
+contract the two repos share.
+
+## 1. Spots now have a review lifecycle — affects TASK-013
+
+`spots` gained columns (web ADR-0006):
+
+```
+status       public.spot_status not null default 'pending'
+             (pending | approved | rejected)
+reviewed_at  timestamptz null
+reviewed_by  uuid null references profiles(id)
+```
+
+- `spots_read` RLS is now: `status = 'approved' OR created_by = auth.uid() OR
+  staff`. **A newly submitted spot is invisible to other users until staff
+  approve it** in the web admin.
+- Mobile must show the creator a "pending review" state on their own spots —
+  the app previously assumed immediate visibility.
+- RLS already does the exclusion; do NOT re-filter approved spots client-side,
+  but do branch UI on `status` for the creator's own spots.
+- Staff approve/reject goes through `admin_review_spot(...)` — never call it
+  from mobile.
+
+## 2. Posts and comments can be staff-hidden — affects TASK-012
+
+`posts` and `comments` gained `hidden_at timestamptz` / `hidden_by uuid`
+(web ADR-0005). Read RLS is now:
+`hidden_at is null OR author_id = auth.uid() OR staff`.
+
+- Hidden content silently disappears from feeds for everyone except the
+  author. Authors still see their own hidden content — optionally badge it
+  ("masqué par la modération").
+- Hiding is the moderation path; content is NOT deleted. Don't treat a
+  vanished post as an error.
+- Staff hide/restore goes through `admin_set_post_visibility(...)` /
+  `admin_set_comment_visibility(...)` — never call them from mobile.
+- The staff `DELETE` RLS policies on posts/comments predate this and bypass
+  the audit log; the web admin never uses them. This repo should decide
+  whether to drop staff from those policies (open item).
+
+## 3. Ratings and karma — affects TASK-008 follow-ups
+
+Mobile migration 0008 shipped `submit_rating` (reason `'rating'`, delta
+`+stars`). The web side completed its paired TASK-007-2 on 2026-06-12:
+
+- New policy `karma_ledger_staff_read`: staff read EVERY user's karma ledger
+  in the admin console (user detail "Réputation" tab shows delta, reason,
+  linked session). Self-read for regular users is unchanged.
+- Keep `karma_ledger.reason` values stable and machine-readable: the admin UI
+  labels `rating` ("Note de session") and shows unknown reasons raw. New
+  reasons (bonus, penalty, …) should be added to this file when introduced.
+- Ratings (stars + comment, rater → ratee, linked session) are displayed
+  read-only on the admin user detail and session review screens.
+- **Gap:** `ratings.comment` is free text but a rating is NOT a valid report
+  target (`reports` points at user/post/comment/session/conversation/message
+  only). If rating comments ship user-visible with a "report this rating"
+  entry point, a `reports.rating_id` column is needed — coordinate with the
+  web repo before adding.
+- `leaderboard` is a derived read model — read it, don't write it.
+- MVP note from mobile TASK-008 still open: the session gate is "accepted+";
+  tighten to `completed` once the completion transition is wired.
+
+## 4. Reports have direct target columns — affects TASK-010
+
+`reports` gained `help_request_id`, `conversation_id`, `message_id`
+(web ADR-0002), in addition to `reported_user_id`, `post_id`, `comment_id`.
+
+- A report has exactly ONE target column set. When users report a session,
+  conversation, or message, set the matching column — don't fall back to
+  participant-level reports, which make unrelated history look like session
+  risk.
+- `reports.status` is enum `public.report_status`
+  (`open | reviewing | resolved | dismissed`). Mobile inserts only ever
+  create `open`; decisions are staff-only via web RPCs.
+
+## 5. Ban semantics — affects TASK-010 banned-user gates
+
+- **Active ban** = a `bans` row with `expires_at IS NULL` or
+  `expires_at > now()`. Unban sets `expires_at = now()` and keeps the row —
+  never check ban state by row existence, and don't trust
+  `profiles.is_banned` (the web RPCs do not maintain it; open item).
+- Account status derives from the active ban: temporary → suspended,
+  permanent → banned.
+
+## 6. Session content stays participant-only
+
+`conversations`, `messages`, and `session_photos` remain participant-only
+(web ADR-0004). Web staff see only metadata summaries through an audited RPC;
+no policy broadening happened. Nothing to change on mobile — listed so nobody
+"fixes" a staff-access gap that is deliberate.
+
+## 7. Account/profile invariants
+
+- `user_roles`, `reports.reported_user_id`, `bans.user_id`, and the
+  `hidden_by`/`reviewed_by` columns all FK to `public.profiles`, NOT
+  `auth.users`. Signup must always create the `profiles` row (there is no DB
+  trigger doing it).
+- Staff-only RPCs (`admin_*`, `get_session_conversation_summary`) verify
+  `private.is_staff()` internally and return SQLSTATE 42501 for non-staff.
+  Never call them from mobile; never duplicate their logic client-side.
