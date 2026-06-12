@@ -1,6 +1,6 @@
 # TASK-009 - Wire Push Notification Registration and Delivery
 
-Status: Review
+Status: Done
 Priority: P1
 Project: Take Me Pic Mobile
 Milestone: Phase 1 MVP - Notifications
