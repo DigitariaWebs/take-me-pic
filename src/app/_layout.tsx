@@ -126,6 +126,7 @@ function RootShell() {
           <Stack.Screen name="booking" />
           <Stack.Screen name="family" />
           <Stack.Screen name="settings" />
+          <Stack.Screen name="blocked-users" />
           <Stack.Screen name="notifications" />
         </Stack>
         </RoleProvider>

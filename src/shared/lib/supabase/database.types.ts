@@ -26,6 +26,7 @@ export type NotificationKind =
   | 'system';
 export type AppRole = 'user' | 'moderator' | 'admin' | 'super_admin';
 export type StoreKind = 'apple' | 'google';
+export type ReportStatus = 'open' | 'reviewing' | 'resolved' | 'dismissed';
 export type SubscriptionStatus =
   | 'active'
   | 'in_grace'
@@ -301,6 +302,62 @@ export interface Database {
         Update: { status?: SubscriptionStatus };
         Relationships: [];
       };
+      reports: {
+        // Exactly ONE target column is set per report; mobile only ever inserts
+        // status 'open'. Decision columns (status/resolver) are staff-owned.
+        Row: {
+          id: number;
+          reporter_id: string;
+          reported_user_id: string | null;
+          post_id: number | null;
+          comment_id: number | null;
+          help_request_id: number | null;
+          conversation_id: number | null;
+          message_id: number | null;
+          reason: string;
+          status: ReportStatus;
+          resolver_id: string | null;
+          resolved_at: Timestamp | null;
+          created_at: Timestamp;
+        };
+        Insert: {
+          reporter_id: string;
+          reason: string;
+          reported_user_id?: string | null;
+          post_id?: number | null;
+          comment_id?: number | null;
+          help_request_id?: number | null;
+          conversation_id?: number | null;
+          message_id?: number | null;
+        };
+        Update: never;
+        Relationships: [];
+      };
+      blocks: {
+        Row: {
+          blocker_id: string;
+          blocked_id: string;
+          created_at: Timestamp;
+        };
+        Insert: { blocker_id: string; blocked_id: string };
+        Update: never;
+        Relationships: [];
+      };
+      bans: {
+        // Staff-only RLS; mobile reads its own status via my_ban_status() only.
+        Row: {
+          id: number;
+          user_id: string;
+          reason: string;
+          banned_by: string | null;
+          expires_at: Timestamp | null;
+          appeal_status: ReportStatus | null;
+          created_at: Timestamp;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
     };
     Views: {
       leaderboard: {
@@ -345,6 +402,10 @@ export interface Database {
         Args: { p_request_id: number; p_stars: number; p_comment?: string | null };
         Returns: { rating_id: number; ratee_id: string; new_karma: number }[];
       };
+      my_ban_status: {
+        Args: Record<string, never>;
+        Returns: { is_banned: boolean; permanent: boolean; expires_at: string | null }[];
+      };
     };
     Enums: {
       presence_status: PresenceStatus;
@@ -353,6 +414,7 @@ export interface Database {
       app_role: AppRole;
       subscription_status: SubscriptionStatus;
       store_kind: StoreKind;
+      report_status: ReportStatus;
     };
   };
 }

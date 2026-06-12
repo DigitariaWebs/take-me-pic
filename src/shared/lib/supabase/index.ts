@@ -14,4 +14,5 @@ export type {
   AppRole,
   SubscriptionStatus,
   StoreKind,
+  ReportStatus,
 } from './database.types';

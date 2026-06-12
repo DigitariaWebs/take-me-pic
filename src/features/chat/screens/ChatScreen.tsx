@@ -28,6 +28,7 @@ import { useAuth } from '@/shared/providers';
 import { useProfile } from '@/features/profile';
 import { chatApi } from '@/features/chat/api/chat-api';
 import { useConversation, type ChatItem } from '@/features/chat/hooks/useConversation';
+import { useSafetyMenu, type SafetyMenuTarget } from '@/features/safety';
 
 function fmtTime(iso: string): string {
   const d = new Date(iso);
@@ -76,6 +77,16 @@ export default function ChatScreen() {
     };
   }, [conversationId, meId]);
   const { data: other } = useProfile(otherId ?? '');
+
+  // Reporting from a chat targets the conversation (WEB-BACKEND-SYNC §4); the
+  // overflow menu also lets the user block the other participant.
+  const safetyTarget: SafetyMenuTarget =
+    conversationId != null
+      ? { kind: 'conversation', conversationId, userId: otherId ?? '' }
+      : { kind: 'user', userId: otherId ?? '' };
+  const safety = useSafetyMenu(safetyTarget);
+  const canModerate = conversationId != null && Boolean(otherId);
+
   const headerUser = {
     firstName: other?.first_name ?? '',
     lastName: other?.last_name ?? null,
@@ -115,8 +126,10 @@ export default function ChatScreen() {
             onBack={() => router.back()}
             onCall={comingSoon}
             onVideo={comingSoon}
+            onMore={canModerate ? safety.open : undefined}
           />
         </View>
+        {safety.modal}
 
         <ScrollView
           ref={scrollRef}
