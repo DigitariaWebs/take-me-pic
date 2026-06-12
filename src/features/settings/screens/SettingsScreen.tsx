@@ -12,6 +12,7 @@ import { JournalSwitch } from '@/shared/ui/JournalSwitch';
 import { useThemeColors, useTheme } from '@/shared/providers/ThemeProvider';
 import { fonts, type ThemeColors } from '@/shared/constants/tokens';
 import { t, useLocale, type LocaleTag } from '@/shared/lib/i18n';
+import { useBlockedUsers } from '@/features/safety';
 
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   back: { fontFamily: fonts.hand, fontSize: 20, color: colors.ink },
@@ -141,6 +142,7 @@ export default function Settings() {
 
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { data: blockedUsers } = useBlockedUsers();
   const [gps, setGps] = useState(true);
   const [visible, setVisible] = useState(true);
   const [locale, setLocale] = useLocale();
@@ -152,37 +154,15 @@ export default function Settings() {
   };
 
   function handleBlockedPress() {
-    Alert.alert(
-      'Utilisateurs bloqués',
-      'Voulez-vous gérer votre liste de blocages ?',
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Gérer',
-          style: 'destructive',
-          onPress: () => {
-            // navigation placeholder
-          },
-        },
-      ],
-    );
+    router.push('/blocked-users');
   }
 
   function handleReportPress() {
-    Alert.alert(
-      'Signaler un contenu',
-      'Voulez-vous signaler un contenu inapproprié ?',
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Signaler',
-          style: 'destructive',
-          onPress: () => {
-            // report action placeholder
-          },
-        },
-      ],
-    );
+    // Reports need a concrete target, so there's no generic "report" form here —
+    // point the user at the per-profile / per-conversation entry points.
+    Alert.alert(t('settings.items.report.title'), t('safety.reportHint'), [
+      { text: t('safety.cancel'), style: 'cancel' },
+    ]);
   }
 
   function handleVerificationPress() {
@@ -309,7 +289,7 @@ export default function Settings() {
             icon={<UserX size={16} color={colors.polaroid} />}
             iconBg={colors.stampRed}
             label={t('settings.items.blocked.title')}
-            trailingText="3"
+            trailingText={blockedUsers && blockedUsers.length > 0 ? String(blockedUsers.length) : undefined}
             chevron
             onPress={handleBlockedPress}
           />

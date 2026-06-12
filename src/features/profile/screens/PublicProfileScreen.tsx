@@ -16,6 +16,7 @@ import { fonts, type ThemeColors } from '@/shared/constants/tokens';
 import { useThemeColors } from '@/shared/providers/ThemeProvider';
 import { t } from '@/shared/lib/i18n';
 import { useRole } from '@/shared/providers/RoleProvider';
+import { useSafetyMenu } from '@/features/safety';
 
 /**
  * 06 · Carte de visite — bottom sheet style ("nearby" mini profile).
@@ -227,6 +228,7 @@ function FullProfile({ userId }: { userId: string }) {
   const user = useMemo(() => findUser(userId), [userId]);
   const [following, setFollowing] = useState(false);
   const [activeTab, setActiveTab] = useState<ProfileTab>('photos');
+  const safety = useSafetyMenu({ kind: 'user', userId });
 
   const tabs: ProfileTab[] = ['photos', 'spots', 'aimés'];
 
@@ -251,7 +253,9 @@ function FullProfile({ userId }: { userId: string }) {
           </Pressable>
           <View style={{ flexDirection: 'row', gap: 14 }}>
             <Share2 size={22} color={colors.onInk} />
-            <MoreHorizontal size={22} color={colors.onInk} />
+            <Pressable onPress={safety.open} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('safety.reportUser')}>
+              <MoreHorizontal size={22} color={colors.onInk} />
+            </Pressable>
           </View>
         </View>
         <View style={{ position: 'absolute', bottom: 14, right: 14 }}>
@@ -371,6 +375,7 @@ function FullProfile({ userId }: { userId: string }) {
           )}
         </View>
       </ScrollView>
+      {safety.modal}
     </PaperBackground>
   );
 }
