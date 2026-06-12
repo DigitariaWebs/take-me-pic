@@ -28,6 +28,9 @@ Prepare the entitlement model for premium features without implementing non-comp
 
 - Source docs: `docs/specs/012-premium-entitlements/spec.md`, `docs/features/phase_2/premium_entitlements_flow.md`, `Take-Me-Pic-PRD-and-Assessment.md`.
 - Premium subscriptions on iOS should use StoreKit/RevenueCat, not Stripe.
+- Backend sync: `docs/WEB-BACKEND-SYNC.md` — the web admin prepares premium,
+  payments, and booking operations in its TASK-010; keep entitlement state
+  server-owned so both clients read the same source.
 
 ## Dependencies
 

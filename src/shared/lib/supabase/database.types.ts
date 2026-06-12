@@ -316,6 +316,10 @@ export interface Database {
           accepted_at: string | null;
         }[];
       };
+      submit_rating: {
+        Args: { p_request_id: number; p_stars: number; p_comment?: string | null };
+        Returns: { rating_id: number; ratee_id: string; new_karma: number }[];
+      };
     };
     Enums: {
       presence_status: PresenceStatus;

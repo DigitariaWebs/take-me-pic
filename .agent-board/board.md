@@ -3,7 +3,7 @@
 Project: Take Me Pic Mobile
 Current focus: Supabase-backed authentication and trusted profile foundation
 Current milestone: Phase 1 MVP — Auth first
-Updated: 2026-06-11
+Updated: 2026-06-12
 
 ## Columns
 
@@ -25,7 +25,7 @@ Updated: 2026-06-11
 | TASK-005 | Wire help request create and accept lifecycle | Done | Agent | P1 |
 | TASK-006 | Wire realtime session chat | Done | Agent | P1 |
 | TASK-007 | Wire session photo transfer | Done | Agent | P1 |
-| TASK-008 | Wire rating, karma, and leaderboard | Backlog | Agent | P1 |
+| TASK-008 | Wire rating, karma, and leaderboard | Review | Agent | P1 |
 | TASK-009 | Wire push notification registration and delivery | Backlog | Agent | P1 |
 | TASK-010 | Wire trust, safety, and reporting flows | Backlog | Agent | P1 |
 | TASK-011 | Add Phase 1 analytics and integration hardening | Backlog | Agent | P1 |
@@ -72,3 +72,9 @@ Then do TASK-002 and TASK-003 before moving into map/request flows.
 - Preserve the approved UI; wire behavior through feature APIs/hooks.
 - Do not expose service-role or secret keys in client code.
 - Do not use user-editable metadata for authorization.
+- Read `docs/WEB-BACKEND-SYNC.md` before wiring any Supabase-backed feature:
+  the web/admin repo shares this database and ships schema, RLS, and
+  staff-RPC changes that affect mobile behavior (spots pre-moderation,
+  content soft-hide, report targets, ban semantics, karma ledger staff
+  read). Whoever changes the shared schema updates that file AND the web
+  repo's `docs/MOBILE-SYNC-NOTES.md`.

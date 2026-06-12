@@ -28,6 +28,11 @@ Move photo spots from mock data to Supabase so users can discover and inspect re
 ## Technical Notes
 
 - Source docs: `docs/specs/011-photo-spots/spec.md`, `docs/features/phase_2/photo_spots_flow.md`.
+- Backend sync: `docs/WEB-BACKEND-SYNC.md` §1 — spots now default to
+  `status = 'pending'` and are invisible to other users until staff approve
+  (RLS handles the "hidden/moderated spots are excluded" criterion). Show
+  creators a "pending review" state on their own spots. Never call
+  `admin_review_spot` from mobile.
 
 ## Dependencies
 

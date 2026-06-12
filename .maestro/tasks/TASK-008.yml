@@ -1,0 +1,13 @@
+appId: com.takemepic.app
+# Boot smoke for the standalone build with rating/karma/leaderboard bundled.
+# submit_rating + karma bump + leaderboard verified two-user against the live DB.
+---
+- launchApp:
+    clearState: true
+- tapOn:
+    text: "Not Now"
+    optional: true
+- extendedWaitUntil:
+    visible: ".*(tap to begin|appuie pour commencer|اضغط للبدء|toca para empezar|sign in|se connecter|next|suivant|skip|selfies).*"
+    timeout: 20000
+- assertVisible: ".*(tap to begin|appuie pour commencer|اضغط للبدء|toca para empezar|sign in|se connecter|next|suivant|skip|selfies).*"

@@ -47,6 +47,10 @@ Blocked/banned users are excluded from future interactions
 - Source docs: `docs/specs/017-trust-safety-admin/spec.md`, `docs/features/cross_cutting/trust_safety_admin_flow.md`.
 - Do not trust client-provided role/moderation state.
 - Admin console implementation is primarily in the web repo; mobile owns user-facing reporting.
+- Backend sync: `docs/WEB-BACKEND-SYNC.md` §4–5 — reports take ONE direct
+  target column (user/post/comment/session/conversation/message) and are
+  inserted as `open` only; active-ban = `expires_at` null or future, never
+  row existence, and `profiles.is_banned` is not maintained by the web RPCs.
 
 ## Dependencies
 

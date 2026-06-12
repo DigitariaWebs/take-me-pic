@@ -12,8 +12,11 @@ import { Squiggle } from '@/shared/ui/Squiggle';
 import { Chip } from '@/shared/ui/Chip';
 import { fonts, type ThemeColors } from '@/shared/constants/tokens';
 import { useThemeColors } from '@/shared/providers/ThemeProvider';
-import { ines, sami, marc, leaderboard } from '@/shared/data/mock';
+import { useLeaderboard } from '../hooks/useLeaderboard';
+import { useAuth } from '@/shared/providers';
 import { t } from '@/shared/lib/i18n';
+
+const PLACEHOLDER_AVATAR = 'https://i.pravatar.cc/300?img=12';
 
 type PeriodKey = 'semaine' | 'mois' | 'toujours';
 
@@ -30,46 +33,28 @@ const SUBTITLE_I18N: Record<PeriodKey, string> = {
   toujours: 'discover.subtitleAllTime',
 };
 
-// Simulate different podium data per period
-const PODIUM_DATA: Record<PeriodKey, {
-  rank1: { user: { firstName: string; avatar: string }; score: number };
-  rank2: { user: { firstName: string; avatar: string }; score: number };
-  rank3: { user: { firstName: string; avatar: string }; score: number };
-}> = {
-  semaine: {
-    rank1: { user: ines, score: 3420 },
-    rank2: { user: sami, score: 2180 },
-    rank3: { user: marc, score: 1890 },
-  },
-  mois: {
-    rank1: { user: ines, score: 14200 },
-    rank2: { user: marc, score: 9800 },
-    rank3: { user: sami, score: 8750 },
-  },
-  toujours: {
-    rank1: { user: ines, score: 98400 },
-    rank2: { user: sami, score: 76000 },
-    rank3: { user: marc, score: 62100 },
-  },
-};
-
-const LEADERBOARD_SCORES: Record<PeriodKey, number[]> = {
-  semaine:  [1240, 1088, 912, 844],
-  mois:     [5200, 4100, 3750, 2980],
-  toujours: [38000, 30500, 26100, 18800],
-};
-
-/** 19 · Tableau d'honneur. */
+/** 19 · Tableau d'honneur — TMP Stars (all-time karma from the backend). */
 export default function Stars() {
   const colors = useThemeColors();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const [period, setPeriod] = useState<PeriodKey>('semaine');
+  const [period, setPeriod] = useState<PeriodKey>('toujours');
 
-  const podium = PODIUM_DATA[period];
-  const rowScores = LEADERBOARD_SCORES[period];
+  // The leaderboard view is all-time karma; period chips are cosmetic for MVP.
+  const { data: rows } = useLeaderboard();
+  const { user } = useAuth();
+  const vm = (rows ?? []).map((r) => ({
+    id: r.user_id,
+    firstName: r.first_name,
+    lastName: r.last_name ?? '',
+    avatar: r.avatar_url ?? PLACEHOLDER_AVATAR,
+    karma: r.karma,
+    rank: r.rank,
+    isMe: r.user_id === user?.id,
+  }));
+  const top = vm.slice(0, 3);
 
   return (
     <PaperBackground tone="paper">
@@ -107,29 +92,28 @@ export default function Stars() {
         </View>
 
         <View style={styles.podium}>
-          <PodiumSlot rank={2} user={podium.rank2.user} score={podium.rank2.score} bar={46} barStyle={silver} rotate={-6} onPress={() => router.push(`/user/${podium.rank2.user.firstName.toLowerCase()}`)} />
-          <PodiumSlot rank={1} user={podium.rank1.user} score={podium.rank1.score} bar={74} barStyle={goldGradient} rotate={2} big onPress={() => router.push(`/user/${podium.rank1.user.firstName.toLowerCase()}`)} />
-          <PodiumSlot rank={3} user={podium.rank3.user} score={podium.rank3.score} bar={34} barStyle={bronze} rotate={6} onPress={() => router.push(`/user/${podium.rank3.user.firstName.toLowerCase()}`)} />
+          {top[1] && <PodiumSlot rank={2} user={top[1]} score={top[1].karma} bar={46} barStyle={silver} rotate={-6} onPress={() => router.push(`/user/${top[1].id}`)} />}
+          {top[0] && <PodiumSlot rank={1} user={top[0]} score={top[0].karma} bar={74} barStyle={goldGradient} rotate={2} big onPress={() => router.push(`/user/${top[0].id}`)} />}
+          {top[2] && <PodiumSlot rank={3} user={top[2]} score={top[2].karma} bar={34} barStyle={bronze} rotate={6} onPress={() => router.push(`/user/${top[2].id}`)} />}
         </View>
 
         <View style={{ paddingHorizontal: 22, paddingTop: 18 }}>
           <View style={styles.list}>
-            {leaderboard.map((row, i) => (
+            {vm.map((row, i) => (
               <Pressable
-                key={row.user.id}
-                onPress={() => router.push(`/user/${row.user.id}`)}
-                style={[styles.row, row.isMe && { backgroundColor: 'rgba(217,181,102,0.12)' }, i !== leaderboard.length - 1 && styles.rowDivider]}
+                key={row.id}
+                onPress={() => router.push(`/user/${row.id}`)}
+                style={[styles.row, row.isMe && { backgroundColor: 'rgba(217,181,102,0.12)' }, i !== vm.length - 1 && styles.rowDivider]}
               >
                 <Text style={styles.rank}>{row.rank}</Text>
-                <Polaroid width={36} height={30} noCaption rotate={i % 2 ? 2 : -2} source={{ uri: row.user.avatar }} />
+                <Polaroid width={36} height={30} noCaption rotate={i % 2 ? 2 : -2} source={{ uri: row.avatar }} />
                 <View style={{ flex: 1 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Text style={styles.who}>{row.user.firstName} {row.user.lastName.charAt(0)}.</Text>
+                    <Text style={styles.who}>{row.firstName}{row.lastName ? ` ${row.lastName.charAt(0)}.` : ''}</Text>
                     {row.isMe && <Chip color="gold" size="sm">{t('stars.you')}</Chip>}
                   </View>
-                  <Text style={styles.sub2}>{t('discover.photoStats', { photos: row.user.photosCount, rating: row.user.rating })}</Text>
                 </View>
-                <Text style={styles.score}>{rowScores[i].toLocaleString('fr-FR')}</Text>
+                <Text style={styles.score}>{row.karma.toLocaleString('fr-FR')} ★</Text>
               </Pressable>
             ))}
           </View>
