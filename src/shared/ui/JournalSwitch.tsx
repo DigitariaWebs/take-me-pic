@@ -20,19 +20,28 @@ export function JournalSwitch({ value, onValueChange }: JournalSwitchProps) {
     }).start();
   }, [value, anim]);
 
+  // "On" used to be `inkSurface` — the same dark tone as the home availability
+  // banner, so the switch vanished into the background. Use a positive green for
+  // on + a muted track for off, and always draw a border so the control reads as
+  // a toggle on light AND dark surfaces.
   const trackBg = anim.interpolate({
     inputRange: [0, 1],
-    outputRange: [colors.inkLine, colors.inkSurface],
+    outputRange: [colors.inkLine, colors.stampGreen],
   });
   const knobLeft = anim.interpolate({ inputRange: [0, 1], outputRange: [2, 26] });
   const knobBg = anim.interpolate({
     inputRange: [0, 1],
-    outputRange: [colors.cardWhite, colors.goldLight],
+    outputRange: [colors.cardWhite, colors.paperWarm],
   });
 
   return (
-    <Pressable onPress={() => onValueChange(!value)} hitSlop={6}>
-      <Animated.View style={[styles.track, { backgroundColor: trackBg }]}>
+    <Pressable
+      onPress={() => onValueChange(!value)}
+      hitSlop={6}
+      accessibilityRole="switch"
+      accessibilityState={{ checked: value }}
+    >
+      <Animated.View style={[styles.track, { backgroundColor: trackBg, borderColor: colors.ink }]}>
         <Animated.View style={[styles.knob, { left: knobLeft, backgroundColor: knobBg }]} />
       </Animated.View>
     </Pressable>
@@ -44,6 +53,7 @@ const styles = StyleSheet.create({
     width: 54,
     height: 30,
     borderRadius: 30,
+    borderWidth: 1.5,
     justifyContent: 'center',
   },
   knob: {

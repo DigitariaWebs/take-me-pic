@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import {
+  ActivityIndicator,
   Pressable,
   PressableProps,
   StyleSheet,
@@ -20,6 +21,8 @@ export interface ButtonProps extends Omit<PressableProps, 'style' | 'children'> 
   variant?: ButtonVariant;
   size?: ButtonSize;
   full?: boolean;
+  /** Shows a spinner in place of the label and blocks presses while truthy. */
+  loading?: boolean;
   icon?: React.ReactNode;
   trailing?: React.ReactNode;
   children: React.ReactNode;
@@ -31,17 +34,20 @@ export function Button({
   variant = 'ink',
   size = 'md',
   full,
+  loading = false,
   icon,
   trailing,
   children,
   style,
   textStyle,
+  disabled,
   ...rest
 }: ButtonProps) {
   const colors = useThemeColors();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const h = size === 'sm' ? 38 : 52;
   const fontSize = size === 'sm' ? 13 : 15;
+  const isDisabled = Boolean(disabled) || loading;
 
   const isGold = variant === 'gold';
   const isPaper = variant === 'paper';
@@ -52,7 +58,9 @@ export function Button({
   const borderColor = isPaper ? colors.ink : isGhost ? colors.inkSoft : 'transparent';
   const bg = isInk ? colors.ink : isPaper ? colors.cardWhite : 'transparent';
 
-  const content = (
+  const content = loading ? (
+    <ActivityIndicator color={textColor} />
+  ) : (
     <>
       {icon}
       <Text style={[styles.label, { color: textColor, fontSize }, textStyle]} numberOfLines={1}>
@@ -64,9 +72,11 @@ export function Button({
 
   return (
     <Pressable
+      disabled={isDisabled}
+      accessibilityState={{ disabled: isDisabled, busy: loading }}
       style={({ pressed }) => [
         styles.root,
-        { height: h, opacity: pressed ? 0.85 : 1 },
+        { height: h, opacity: isDisabled ? 0.55 : pressed ? 0.85 : 1 },
         full && styles.full,
         isPaper && { borderColor, borderWidth: 1.5 },
         isGhost && { borderColor, borderWidth: 1.5, borderStyle: 'dashed' as const },

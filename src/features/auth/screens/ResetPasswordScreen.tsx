@@ -157,7 +157,7 @@ export default function Reset() {
       {/* CTA zone */}
       <View style={[styles.cta, { bottom: insets.bottom + 26 }]}>
         {!done ? (
-          <Button full variant="ink" onPress={onReset} disabled={updatePassword.isPending}>
+          <Button full variant="ink" onPress={onReset} loading={updatePassword.isPending}>
             {t('ob.resetCta')}
           </Button>
         ) : (
@@ -211,7 +211,9 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   eyeBtn: {
     position: 'absolute',
     right: 12,
-    bottom: 22,
+    // Vertically center on the 46px input that sits above the Field's 14px
+    // bottom margin: 14 + (46 - 20)/2 = 27.
+    bottom: 27,
   },
   error: {
     fontFamily: fonts.hand,

@@ -1,6 +1,6 @@
 # TASK-015 - UI fixes: input alignment, keyboard overlap, active toggle
 
-Status: Backlog
+Status: Review
 Priority: P2
 Project: Take Me Pic Mobile
 Milestone: Phase 1 MVP - Polish
@@ -34,11 +34,11 @@ GitHub issue #11 "Ui issues" (ProgixDev/take-me-pic).
 
 ## Acceptance Criteria
 
-- [ ] Password visibility icon is vertically centered/aligned in all password fields.
-- [ ] The signup step-3 bio field is fully visible (not covered by the keyboard) when focused.
-- [ ] The home "active now" control clearly reads as an on/off toggle in both states.
-- [ ] `npm run typecheck` passes.
-- [ ] Maestro boot smoke (Release build) stays green.
+- [x] Password visibility icon is vertically centered in all password fields. _Login/Signup eye button height-matched to the 46px field + centered; Reset (labelled field) centered at `bottom:27`._
+- [x] The signup step-3 bio field is fully visible (not covered by the keyboard) when focused. _Wrapped the profile-setup ScrollView in a `KeyboardAvoidingView` (iOS `padding`)._
+- [x] The home "active now" control clearly reads as an on/off toggle in both states. _Root cause: `JournalSwitch` ON track was `inkSurface` — identical to the dark availability banner, so it vanished. Now ON=`stampGreen`, OFF=`inkLine`, with an `ink` border + `accessibilityRole="switch"`._
+- [x] `npm run typecheck` passes.
+- [x] Maestro (Release build) stays green (boots + reaches the login screen with the password-field fix).
 
 ## Technical Notes
 

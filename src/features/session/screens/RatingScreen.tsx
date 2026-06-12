@@ -163,7 +163,8 @@ export default function Rating() {
           full
           variant="gold"
           onPress={() => void submit()}
-          disabled={rating === 0 || submitting || requestId == null}
+          loading={submitting}
+          disabled={rating === 0 || requestId == null}
         >
           {t('rating.cta')}
         </Button>

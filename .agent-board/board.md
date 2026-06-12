@@ -32,6 +32,8 @@ Updated: 2026-06-12
 | TASK-012 | Wire community feed backend slice | Backlog | Agent | P2 |
 | TASK-013 | Wire photo spots backend slice | Backlog | Agent | P2 |
 | TASK-014 | Prepare premium entitlements foundation | Backlog | Agent | P2 |
+| TASK-015 | UI fixes: input alignment, keyboard overlap, active toggle | Review | Agent | P2 |
+| TASK-016 | UX: button loading states, language dropdown, remove two controls | Review | Agent | P2 |
 
 ## Recommended Start
 
