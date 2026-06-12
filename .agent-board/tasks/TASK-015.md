@@ -1,6 +1,6 @@
 # TASK-015 - UI fixes: input alignment, keyboard overlap, active toggle
 
-Status: Review
+Status: Done
 Priority: P2
 Project: Take Me Pic Mobile
 Milestone: Phase 1 MVP - Polish
