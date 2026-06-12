@@ -91,7 +91,7 @@
     {
       "id": "TASK-008",
       "title": "Wire rating, karma, and leaderboard",
-      "status": "Review",
+      "status": "Done",
       "priority": "P1",
       "owner": "Agent",
       "path": ".agent-board/tasks/TASK-008.md",

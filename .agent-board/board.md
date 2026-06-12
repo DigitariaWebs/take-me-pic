@@ -25,7 +25,7 @@ Updated: 2026-06-12
 | TASK-005 | Wire help request create and accept lifecycle | Done | Agent | P1 |
 | TASK-006 | Wire realtime session chat | Done | Agent | P1 |
 | TASK-007 | Wire session photo transfer | Done | Agent | P1 |
-| TASK-008 | Wire rating, karma, and leaderboard | Review | Agent | P1 |
+| TASK-008 | Wire rating, karma, and leaderboard | Done | Agent | P1 |
 | TASK-009 | Wire push notification registration and delivery | Backlog | Agent | P1 |
 | TASK-010 | Wire trust, safety, and reporting flows | Backlog | Agent | P1 |
 | TASK-011 | Add Phase 1 analytics and integration hardening | Backlog | Agent | P1 |
