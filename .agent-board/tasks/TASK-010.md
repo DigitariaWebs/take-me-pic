@@ -1,6 +1,6 @@
 # TASK-010 - Wire Trust, Safety, and Reporting Flows
 
-Status: Review
+Status: Done
 Priority: P1
 Project: Take Me Pic Mobile
 Milestone: Phase 1 MVP - Trust and safety

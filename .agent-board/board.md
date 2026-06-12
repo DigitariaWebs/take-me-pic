@@ -27,11 +27,13 @@ Updated: 2026-06-12
 | TASK-007 | Wire session photo transfer | Done | Agent | P1 |
 | TASK-008 | Wire rating, karma, and leaderboard | Done | Agent | P1 |
 | TASK-009 | Wire push notification registration and delivery | Done | Agent | P1 |
-| TASK-010 | Wire trust, safety, and reporting flows | Review | Agent | P1 |
+| TASK-010 | Wire trust, safety, and reporting flows | Done | Agent | P1 |
 | TASK-011 | Add Phase 1 analytics and integration hardening | Backlog | Agent | P1 |
 | TASK-012 | Wire community feed backend slice | Backlog | Agent | P2 |
 | TASK-013 | Wire photo spots backend slice | Backlog | Agent | P2 |
 | TASK-014 | Prepare premium entitlements foundation | Backlog | Agent | P2 |
+| TASK-015 | UI fixes: input alignment, keyboard overlap, active toggle | Backlog | Agent | P2 |
+| TASK-016 | UX: button loading states, language dropdown, remove two controls | Backlog | Agent | P2 |
 
 ## Recommended Start
 
