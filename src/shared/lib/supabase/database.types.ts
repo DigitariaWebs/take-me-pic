@@ -25,6 +25,7 @@ export type NotificationKind =
   | 'spot'
   | 'system';
 export type AppRole = 'user' | 'moderator' | 'admin' | 'super_admin';
+export type StoreKind = 'apple' | 'google';
 export type SubscriptionStatus =
   | 'active'
   | 'in_grace'
@@ -259,10 +260,34 @@ export interface Database {
           user_id: string;
           kind: NotificationKind;
           body: string;
+          meta: string | null;
+          emphasis: string | null;
+          data: Json | null;
+          read_at: Timestamp | null;
           created_at: Timestamp;
         };
-        Insert: { user_id: string; kind: NotificationKind; body: string };
-        Update: never;
+        Insert: {
+          user_id: string;
+          kind: NotificationKind;
+          body: string;
+          meta?: string | null;
+          emphasis?: string | null;
+          data?: Json | null;
+          read_at?: Timestamp | null;
+        };
+        Update: { read_at?: Timestamp | null };
+        Relationships: [];
+      };
+      push_tokens: {
+        Row: {
+          id: number;
+          user_id: string;
+          token: string;
+          platform: StoreKind;
+          created_at: Timestamp;
+        };
+        Insert: { user_id: string; token: string; platform: StoreKind };
+        Update: { user_id?: string; token?: string; platform?: StoreKind };
         Relationships: [];
       };
       subscriptions: {
@@ -327,6 +352,7 @@ export interface Database {
       notification_kind: NotificationKind;
       app_role: AppRole;
       subscription_status: SubscriptionStatus;
+      store_kind: StoreKind;
     };
   };
 }

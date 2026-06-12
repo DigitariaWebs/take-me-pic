@@ -13,4 +13,5 @@ export type {
   NotificationKind,
   AppRole,
   SubscriptionStatus,
+  StoreKind,
 } from './database.types';

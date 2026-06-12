@@ -283,6 +283,9 @@ const es: typeof fr = {
     yesterday: '— AYER —',
     filters: ['todas', 'solicitudes', 'karma', 'comunidad'],
     view: 'ver',
+    pushOffTitle: 'notificaciones push desactivadas',
+    pushOffBody: 'actívalas para no perderte nada · toca aquí',
+    loading: 'cargando…',
   },
 };
 
