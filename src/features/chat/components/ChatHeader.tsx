@@ -6,7 +6,7 @@ import {
   Pressable,
   StyleSheet,
 } from 'react-native';
-import { ArrowLeft, Phone, Video } from 'lucide-react-native';
+import { ArrowLeft, Phone, Video, MoreVertical } from 'lucide-react-native';
 import { fonts, spacing, radii, type ThemeColors } from '@/shared/constants/tokens';
 import { useThemeColors } from '@/shared/providers/ThemeProvider';
 import { DashedLine } from '@/shared/ui/DashedLine';
@@ -18,6 +18,7 @@ interface ChatHeaderProps {
   onBack: () => void;
   onCall: () => void;
   onVideo: () => void;
+  onMore?: () => void;
 }
 
 export function ChatHeader({
@@ -26,6 +27,7 @@ export function ChatHeader({
   onBack,
   onCall,
   onVideo,
+  onMore,
 }: ChatHeaderProps) {
   const colors = useThemeColors();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -94,6 +96,18 @@ export function ChatHeader({
           >
             <Video size={18} color={colors.ink2} strokeWidth={2} />
           </Pressable>
+
+          {onMore ? (
+            <Pressable
+              onPress={onMore}
+              style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
+              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+              accessibilityLabel="Plus d'options"
+              accessibilityRole="button"
+            >
+              <MoreVertical size={18} color={colors.ink2} strokeWidth={2} />
+            </Pressable>
+          ) : null}
         </View>
       </View>
 

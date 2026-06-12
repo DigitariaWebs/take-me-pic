@@ -113,7 +113,7 @@
     {
       "id": "TASK-010",
       "title": "Wire trust, safety, and reporting flows",
-      "status": "Backlog",
+      "status": "Done",
       "priority": "P1",
       "owner": "Agent",
       "path": ".agent-board/tasks/TASK-010.md",

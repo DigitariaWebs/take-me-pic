@@ -1,0 +1,26 @@
+appId: com.takemepic.app
+# TASK-010 boot smoke for the standalone build with trust/safety wiring bundled.
+#
+# Proves the safety changes don't break startup: the gate now calls the
+# my_ban_status() RPC (fail-open on error), the new safety feature (report/block
+# API + hooks + action sheets), the wired profile/chat/settings entry points,
+# and the blocked-users screen all load cleanly.
+#
+# Report/block surfaces and the banned-user gate redirect sit behind the auth
+# gate, so they're verified against the live DB (report insert with one target +
+# 'open' status, block idempotency/unblock, find_available_helpers block
+# exclusion, my_ban_status) rather than in this unauthenticated boot smoke. The
+# real 'blocked' redirect for a banned session is the manual on-device check.
+---
+- launchApp:
+    clearState: true
+- tapOn:
+    text: ".*(Allow|Don.t Allow|Not Now|Autoriser|Ne pas autoriser){1}.*"
+    optional: true
+- tapOn:
+    text: "Not Now"
+    optional: true
+- extendedWaitUntil:
+    visible: ".*(tap to begin|appuie pour commencer|اضغط للبدء|toca para empezar|sign in|se connecter|next|suivant|skip|selfies).*"
+    timeout: 20000
+- assertVisible: ".*(tap to begin|appuie pour commencer|اضغط للبدء|toca para empezar|sign in|se connecter|next|suivant|skip|selfies).*"

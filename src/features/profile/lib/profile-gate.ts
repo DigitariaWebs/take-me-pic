@@ -27,6 +27,10 @@ type ProfileGateInput = {
   profile: Profile | null | undefined;
   isProfileLoading: boolean;
   isProfileError: boolean;
+  // Authoritative active-ban signal from the `bans` table (my_ban_status RPC).
+  // `profiles.is_banned` is not maintained by the web admin RPCs, so it cannot
+  // be the sole source of truth. Undefined while loading / on error → fail open.
+  hasActiveBan?: boolean;
 };
 
 export function normalizeUsername(value: string): string {
@@ -94,7 +98,9 @@ export function getTrustedProfileGateState(input: ProfileGateInput): TrustedProf
     return 'profile_missing';
   }
 
-  if (input.profile.is_banned) {
+  // Either signal gates: the legacy profiles.is_banned fast-path OR an active
+  // row in the `bans` table (the authoritative source via my_ban_status).
+  if (input.profile.is_banned || input.hasActiveBan) {
     return 'blocked';
   }
 
